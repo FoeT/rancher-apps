@@ -1,11 +1,25 @@
-# Fleet Applications for Rancher Deployment
+# Rancher Fleet Applications
 
-This directory contains organized YAML configurations for deploying applications using Fleet in Rancher.
+This repository contains organized YAML configurations for deploying applications using Fleet in Rancher.
+
+## Quick Start
+
+To deploy these applications:
+
+1. Clone this repository
+2. Run the setup script to initialize resources:
+   ```bash
+   ./setup.sh
+   ```
+3. Apply the Fleet GitRepo configuration:
+   ```bash
+   kubectl apply -f fleet-repo.yaml
+   ```
 
 ## Directory Structure
 
 ```
-fleet-apps/
+/
 ├── base/                         # Shared configurations
 │   ├── fleet.yaml                # Base Fleet config
 │   ├── persistent-volumes.yaml   # PVC definitions
