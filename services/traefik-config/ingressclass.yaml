@@ -1,0 +1,17 @@
+# IngressClass for Traefik - using the existing K3s Traefik instance
+apiVersion: networking.k8s.io/v1
+kind: IngressClass
+metadata:
+  name: traefik
+spec:
+  controller: traefik.io/ingress-controller
+---
+# Annotations to add for all app ingresses
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: traefik-ingress-config
+  namespace: weapps
+data:
+  ingressClass: "traefik"
+  defaultTlsSecret: "weapps/mynetapp-site-production-tls"

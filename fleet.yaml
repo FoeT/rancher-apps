@@ -1,0 +1,99 @@
+defaultNamespace: weapps
+namespace: weapps
+
+# Core infrastructure components - only cert-manager is managed by Fleet
+dependsOn:
+  - name: cert-manager
+
+# Define all bundles to be deployed
+subFolders:
+  mode: first
+subFolderOptions:
+  cert-manager:
+    helm:
+      releaseName: cert-manager
+      values:
+        # Only common overrides here - see service/cert-manager/fleet.yaml for details
+
+  services:
+    subFolders:
+      mode: all
+    subFolderOptions:
+      common:
+        # Must be first
+        order: 1
+        
+      traefik-config:
+        # Must come after common but before apps
+        order: 2
+        dependsOn:
+          - name: common
+
+      # Databases - start before applications
+      databases:
+        order: 5
+        dependsOn:
+          - name: common
+        subFolders:
+          mode: all
+        subFolderOptions:
+          xchat-db:
+            order: 1
+          mm-db:
+            order: 2
+          foretold-db:
+            order: 3
+          
+      nginx:
+        order: 10
+        dependsOn:
+          - name: cert-manager
+          - name: common
+          - name: traefik-config
+          - name: databases
+          
+      code-server:
+        order: 15
+        dependsOn:
+          - name: cert-manager
+          - name: common
+          - name: traefik-config
+          
+      nextcloud:
+        order: 18
+        dependsOn:
+          - name: cert-manager
+          - name: common
+          - name: traefik-config
+          - name: nginx
+          
+      exchat:
+        order: 20
+        dependsOn:
+          - name: cert-manager
+          - name: common
+          - name: traefik-config
+          - name: nginx
+          - name: databases/xchat-db
+      
+      pihole:
+        order: 30
+        dependsOn:
+          - name: cert-manager
+          - name: common
+          - name: traefik-config
+      
+      ha-proxy:
+        order: 40
+        dependsOn:
+          - name: cert-manager
+          - name: common
+          - name: traefik-config
+      
+      coparentcare:
+        order: 50
+        dependsOn:
+          - name: cert-manager
+          - name: common
+          - name: traefik-config
+          - name: nginx

@@ -1,0 +1,7 @@
+# Create the weapps namespace for all applications
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: weapps
+  labels:
+    name: weapps

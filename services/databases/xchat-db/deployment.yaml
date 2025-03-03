@@ -1,0 +1,85 @@
+apiVersion: v1
+kind: Secret
+metadata:
+  name: exchat-secrets
+  namespace: weapps
+type: Opaque
+data:
+  EMAIL_APP_PASS: enNwcCBobGdxIGV3bWYgcW9qYw==
+  EMAIL_PASS: bDN0bTMxbk4wdw==
+  EMAIL_PORT: NTg3
+  EMAIL_USER: ZXhjaGF0bWFpbEBnbWFpbC5jb20=
+  GOOGLE_RECAPTCHA_SECRET_KEY: NkxmNjI3d21BQUFBQUNYWHF4Tld0REVzNmgxTThPRFdFRlJwMk56Tg==
+  MYSQL_DATABASE: ZXhjaGF0LWRi
+  MYSQL_PASSWORD: bDN0bTMxbg==
+  MYSQL_ROOT_PASSWORD: bDN0bTMxbk4wdw==
+  MYSQL_USER: Zm9l
+  SECRET_KEY: NWY2YWQwYmYxZjI4N2ZmNDk1ZTgyOTQyYmE0ZDIxOTlkMGFkYzVhNw==
+  SOCIAL_AUTH_FACEBOOK_KEY: NDQ2MTUwNjA5MjgwMDk3
+  SOCIAL_AUTH_FACEBOOK_SECRET: NTQ5NmRiNmEzYzFkZGM1OTE5NDRjZTJhNTkzMWE2Y2U=
+  SOCIAL_AUTH_GITHUB_KEY: YzdjYmVlMGRkMmEzYjhjMDBmZTM=
+  SOCIAL_AUTH_GITHUB_SECRET: NWY2YWQwYmYxZjI4N2ZmNDk1ZTgyOTQyYmE0ZDIxOTlkMGFkYzVhNw==
+  SOCIAL_AUTH_GOOGLE_OAUTH2_KEY: >-
+    MzcxNDM4OTEzNTUwLTkxcjQ4bmJqcXNibzliOW0zZmU5MHQ5M2o3bjl2N2lpLmFwcHMuZ29vZ2xldXNlcmNvbnRlbnQuY29t
+  SOCIAL_AUTH_GOOGLE_OAUTH2_SECRET: aWZuUWRudXhzb2hza3lIajFkd1hJMVJ5
+  SOCIAL_AUTH_TWITTER_KEY: TXVsZkZjREsyek5INGc3cWRoZEhMOGdrZw==
+  SOCIAL_AUTH_TWITTER_SECRET: RXdoOWpva05mc2FLdkRxcThxTXgxdTRPY2RhRDg1VDg3QlRmMldORTFNZmNWSVFmc2Q=
+  AGORA_APP_CERTIFICATE: YWNhYTEzMTk3NjE2NGM3Njg2NDc1NDRkNDUyNTM0OGU=
+  AGORA_APP_ID: ZWZlMTc1MzAyOTY5NDAxOTgyMjA0NDQ2MDczNDExMzA=
+  GOOGLE_APPLICATION_CREDENTIALS: >-
+    L3Zhci93d3cvZXhjaGF0L2Jsb2cvdGVtcGxhdGVzL2V4dHJhcy9zZXJ2aWNlQWNjb3VudEtleS5qc29u
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: exchat-db-service
+  namespace: weapps
+spec:
+  selector:
+    app: exchat-db-workload
+  ports:
+    - protocol: TCP
+      port: 3306
+      targetPort: 3306
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: exchat-db-workload-deployment
+  namespace: weapps
+spec:
+  selector:
+    matchLabels:
+      app: exchat-db-workload
+  replicas: 1
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app: exchat-db-workload
+    spec:
+      containers:
+      - name: exchat-db-workload
+        envFrom:
+        - secretRef:
+            name: exchat-secrets
+            optional: false
+        image: mariadb:latest
+        ports: 
+        - containerPort: 3306
+        volumeMounts:
+        - mountPath: /var/lib/mysql
+          name: pinas-root
+          subPath: scripts/git/weapps-exchat-db/files
+      restartPolicy: Always
+      schedulerName: default-scheduler
+      volumes:
+      - name: pinas-root
+        persistentVolumeClaim:
+          claimName: pinas-root
+      - name: exchat-secrets
+        secret:
+          defaultMode: 420
+          optional: false
+          secretName: exchat-secrets

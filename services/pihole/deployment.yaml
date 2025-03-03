@@ -1,0 +1,133 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: pihole-config
+  namespace: weapps
+data:
+  TZ: "Australia/Brisbane"
+  DNSMASQ_USER: "root"
+  DNSMASQ_LISTENING: "all"
+  DNS1: "1.1.1.1"  # Added upstream DNS
+  DNS2: "8.8.8.8"  # Added backup DNS  
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: pihole-secret
+  namespace: weapps
+type: Opaque
+data:
+  # This is 'm@nual20' base64 encoded
+  WEBPASSWORD: bUBudWFsMjA=
+---
+# DNS Service on .95
+apiVersion: v1
+kind: Service
+metadata:
+  name: pihole-dns
+  namespace: weapps
+  annotations:
+    metallb.universe.tf/allow-shared-ip: "true"
+    metallb.universe.tf/loadBalancerIPs: "172.16.0.95"
+spec:
+  type: LoadBalancer  
+  externalTrafficPolicy: Local 
+  internalTrafficPolicy: Local
+  ports:
+    - port: 8080
+      targetPort: 80
+      protocol: TCP
+      name: dns-web  
+    - port: 53
+      targetPort: 53
+      protocol: TCP
+      name: dns-tcp
+    - port: 53
+      targetPort: 53
+      protocol: UDP
+      name: dns-udp
+  selector:
+    app: pihole
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: pihole
+  namespace: weapps
+spec:
+  selector:
+    matchLabels:
+      app: pihole
+  replicas: 1
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app: pihole
+    spec:
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+            - matchExpressions:
+              - key: kubernetes.io/hostname
+                operator: In
+                values:
+                - "ranchervm1"    
+      containers:
+        - name: pihole
+          image: pihole/pihole:latest
+          ports:
+            - containerPort: 80
+              name: http
+            - containerPort: 53
+              protocol: TCP
+              name: dns-tcp
+            - containerPort: 53
+              protocol: UDP
+              name: dns-udp
+          envFrom:
+            - configMapRef:
+                name: pihole-config
+            - secretRef:
+                name: pihole-secret
+          volumeMounts:
+            - name: pinas-root
+              mountPath: /etc/pihole
+              subPath: docker/pihole/files/etc
+            - name: pinas-root
+              mountPath: /etc/dnsmasq.d
+              subPath: docker/pihole/files/dns
+          securityContext:
+            capabilities:
+              add: ["NET_ADMIN"]
+      volumes:
+      - name: pinas-root
+        persistentVolumeClaim:
+          claimName: pinas-root        
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: pihole-ingress
+  namespace: weapps
+  annotations:
+    traefik.ingress.kubernetes.io/router.entrypoints: websecure
+    traefik.ingress.kubernetes.io/router.tls: "true"
+spec:
+  ingressClassName: traefik
+  rules:
+    - host: pihole.mynetapp.site
+      http:
+        paths:
+          - pathType: ImplementationSpecific
+            backend:
+              service:
+                name: pihole-dns
+                port:
+                  number: 8080
+  tls:
+    - hosts:
+        - pihole.mynetapp.site
+      secretName: mynetapp-site-production-tls

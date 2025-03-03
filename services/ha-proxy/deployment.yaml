@@ -1,0 +1,47 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: ha-rproxy-service
+  namespace: weapps
+spec:
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 8123
+      appProtocol: http
+---
+apiVersion: v1
+kind: Endpoints
+metadata:
+  name: ha-rproxy-service
+  namespace: weapps 
+subsets:
+  - addresses:
+    - ip: 172.16.0.20 # IP address of your Home Assistant server
+    ports:
+    - port: 8123   
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: ha-rproxy-ingress
+  namespace: weapps
+  annotations:
+    traefik.ingress.kubernetes.io/router.entrypoints: websecure
+    traefik.ingress.kubernetes.io/router.tls: "true"
+spec:
+  ingressClassName: traefik
+  rules:
+  - host: ha.mynetapp.site
+    http:
+      paths:
+      - pathType: ImplementationSpecific
+        backend:
+          service:
+            name: ha-rproxy-service
+            port:
+              number: 80
+  tls:
+  - hosts:
+    - ha.mynetapp.site
+    secretName: mynetapp-site-production-tls

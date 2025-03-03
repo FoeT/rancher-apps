@@ -1,0 +1,30 @@
+# Certificates for domains
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: mynetapp-site
+  namespace: weapps
+spec:
+  secretName: mynetapp-site-production-tls
+  issuerRef:
+    name: letsencrypt-production
+    kind: ClusterIssuer
+  commonName: "*.mynetapp.site"
+  dnsNames:
+  - "*.mynetapp.site"
+  - "mynetapp.site"
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: coparentcare-com
+  namespace: weapps
+spec:
+  secretName: coparentcare-com-tls
+  issuerRef:
+    name: letsencrypt-production
+    kind: ClusterIssuer
+  commonName: "coparentcare.com"
+  dnsNames:
+  - "coparentcare.com"
+  - "www.coparentcare.com"

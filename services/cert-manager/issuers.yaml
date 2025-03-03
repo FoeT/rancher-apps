@@ -1,0 +1,58 @@
+# Cert-Manager Cluster Issuers
+
+# LetsEncrypt Production
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata:
+  name: letsencrypt-production
+spec:
+  acme:
+    server: https://acme-v02.api.letsencrypt.org/directory
+    email: admin@weapps.com.au
+    privateKeySecretRef:
+      name: letsencrypt-production
+    solvers:
+      - dns01:
+          cloudflare:
+            email: admin@weapps.com.au
+            apiTokenSecretRef:
+              name: cloudflare-token-secret
+              key: cloudflare-token
+        selector:
+          dnsZones:
+            - "mynetapp.site"
+            - "coparentcare.com"
+---
+# LetsEncrypt Staging (for testing)
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata:
+  name: letsencrypt-staging
+spec:
+  acme:
+    server: https://acme-staging-v02.api.letsencrypt.org/directory
+    email: admin@weapps.com.au
+    privateKeySecretRef:
+      name: letsencrypt-staging
+    solvers:
+      - dns01:
+          cloudflare:
+            email: admin@weapps.com.au
+            apiTokenSecretRef:
+              name: cloudflare-token-secret
+              key: cloudflare-token
+        selector:
+          dnsZones:
+            - "mynetapp.site"
+            - "coparentcare.com"
+---
+# Cloudflare API Token Secret
+apiVersion: v1
+kind: Secret
+metadata:
+  name: cloudflare-token-secret
+  namespace: cert-manager
+type: Opaque
+data:
+  # Replace with your actual Cloudflare token (base64 encoded)
+  cloudflare-token: UmVwbGFjZSB0aGlzIHdpdGggeW91ciBhY3R1YWwgdG9rZW4=

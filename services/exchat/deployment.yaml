@@ -1,0 +1,226 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: exchat-service
+  namespace: weapps
+spec:
+  selector:
+    app: exchat-workload
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 8000
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: redis-service
+  namespace: weapps
+spec:
+  selector:
+    app: exchat-redis
+  ports:
+    - protocol: TCP
+      port: 6379
+      targetPort: 6379
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: exchat-service-ingress
+  namespace: weapps
+  annotations:
+    traefik.ingress.kubernetes.io/router.entrypoints: websecure
+    traefik.ingress.kubernetes.io/router.tls: "true"
+spec:
+  ingressClassName: traefik
+  rules:
+  - host: exchat.mynetapp.site
+    http:
+      paths:
+      - pathType: ImplementationSpecific
+        backend:
+          service:
+            name: nginx-service
+            port:
+              number: 80
+  tls:
+  - hosts:
+    - exchat.mynetapp.site
+    secretName: mynetapp-site-production-tls
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: exchat-redis-deployment
+  namespace: weapps
+spec:
+  selector:
+    matchLabels:
+      app: exchat-redis
+  replicas: 1
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app: exchat-redis
+    spec:    
+      containers:
+      - image: redis:latest
+        imagePullPolicy: Always
+        name: exchat-redis
+        ports:
+        - containerPort: 6379
+          name: redis-port
+          protocol: TCP
+      restartPolicy: Always
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: exchat-workload-deployment
+  namespace: weapps
+  annotations:
+    keel.sh/policy: force   # Will update even when using 'latest' tag
+    keel.sh/trigger: poll   # Enables active polling
+    keel.sh/pollSchedule: "@every 1m"  # Check for updates every minute
+spec:
+  selector:
+    matchLabels:
+      app: exchat-workload
+  replicas: 1
+  strategy:
+    type: RollingUpdate
+  template:
+    metadata:
+      labels:
+        app: exchat-workload
+    spec:    
+      containers:
+      - envFrom:
+        - secretRef:
+            name: exchat-secrets
+            optional: false
+        image: ghcr.io/foet/myexchat:latest
+        imagePullPolicy: Always
+        name: exchat-workload
+        ports:
+        - containerPort: 8000
+          name: exchat-port
+          protocol: TCP
+        volumeMounts:
+        - mountPath: /var/www/exchat/media
+          name: pinas-root
+          subPath: scripts/git/Exchat_Social_Network/media      
+        - mountPath: /var/www/exchat/static
+          name: pinas-root
+          subPath: scripts/git/Exchat_Social_Network/static            
+      imagePullSecrets:
+      - name: github-container-registry
+      volumes:
+      - name: pinas-root
+        persistentVolumeClaim:
+          claimName: pinas-root
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: exchat-celery-worker-deployment
+  namespace: weapps
+  annotations:
+    keel.sh/policy: force
+    keel.sh/trigger: poll
+    keel.sh/pollSchedule: "@every 1m"
+spec:
+  selector:
+    matchLabels:
+      app: exchat-celery-worker
+  replicas: 1
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app: exchat-celery-worker
+    spec:
+      containers:
+      - envFrom:
+        - secretRef:
+            name: exchat-secrets
+            optional: false
+        image: python:3.10
+        imagePullPolicy: Always
+        name: exchat-celery-worker
+        command:
+          - /bin/sh
+          - -c
+          - "cd /var/www/exchat && pip install -r requirements.txt && PYTHONPATH=/var/www/exchat celery -A myproject worker -l INFO"
+        volumeMounts:
+        - mountPath: /var/www/exchat
+          name: pinas-root
+          subPath: scripts/git/Exchat_Social_Network
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "100m"
+          limits:
+            memory: "512Mi"
+            cpu: "300m"
+      imagePullSecrets:
+      - name: github-container-registry
+      volumes:
+      - name: pinas-root
+        persistentVolumeClaim:
+          claimName: pinas-root
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: exchat-celery-beat-deployment
+  namespace: weapps
+  annotations:
+    keel.sh/policy: force
+    keel.sh/trigger: poll
+    keel.sh/pollSchedule: "@every 1m"
+spec:
+  selector:
+    matchLabels:
+      app: exchat-celery-beat
+  replicas: 1
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app: exchat-celery-beat
+    spec:
+      containers:
+      - envFrom:
+        - secretRef:
+            name: exchat-secrets
+            optional: false
+        image: python:3.10
+        imagePullPolicy: Always
+        name: exchat-celery-beat
+        command:
+          - /bin/sh
+          - -c
+          - "cd /var/www/exchat && pip install -r requirements.txt && PYTHONPATH=/var/www/exchat celery -A myproject beat -l INFO"
+        volumeMounts:
+        - mountPath: /var/www/exchat
+          name: pinas-root
+          subPath: scripts/git/Exchat_Social_Network
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "50m"
+          limits:
+            memory: "256Mi"
+            cpu: "100m"
+      imagePullSecrets:
+      - name: github-container-registry
+      volumes:
+      - name: pinas-root
+        persistentVolumeClaim:
+          claimName: pinas-root

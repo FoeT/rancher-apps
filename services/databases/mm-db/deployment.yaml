@@ -1,0 +1,75 @@
+apiVersion: v1
+kind: Secret
+metadata:
+  name: mmeraki-secrets
+  namespace: weapps
+type: Opaque
+data:
+  MYSQL_DATABASE: bW1lcmFraS1kYg==
+  MYSQL_PASSWORD: bDN0bTMxbg==
+  MYSQL_ROOT_PASSWORD: bDN0bTMxbk4wdw==
+  MYSQL_USER: Zm9l
+  SECRET_KEY: NWY2YWQwYmYxZjI4N2ZmNDk1ZTgyOTQyYmE0ZDIxOTlkMGFkYzVhNw==
+  SOCIAL_AUTH_FACEBOOK_KEY: NDQ2MTUwNjA5MjgwMDk3
+  SOCIAL_AUTH_FACEBOOK_SECRET: NTQ5NmRiNmEzYzFkZGM1OTE5NDRjZTJhNTkzMWE2Y2U=
+  SOCIAL_AUTH_GITHUB_KEY: YzdjYmVlMGRkMmEzYjhjMDBmZTM=
+  SOCIAL_AUTH_GITHUB_SECRET: NWY2YWQwYmYxZjI4N2ZmNDk1ZTgyOTQyYmE0ZDIxOTlkMGFkYzVhNw==
+  SOCIAL_AUTH_GOOGLE_OAUTH2_KEY: MzcxNDM4OTEzNTUwLTkxcjQ4bmJqcXNibzliOW0zZmU5MHQ5M2o3bjl2N2lpLmFwcHMuZ29vZ2xldXNlcmNvbnRlbnQuY29t
+  SOCIAL_AUTH_GOOGLE_OAUTH2_SECRET: aWZuUWRudXhzb2hza3lIajFkd1hJMVJ5
+  SOCIAL_AUTH_TWITTER_KEY: TXVsZkZjREsyek5INGc3cWRoZEhMOGdrZw==
+  SOCIAL_AUTH_TWITTER_SECRET: RXdoOWpva05mc2FLdkRxcThxTXgxdTRPY2RhRDg1VDg3QlRmMldORTFNZmNWSVFmc2Q=
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: mmeraki-db-service
+  namespace: weapps
+spec:
+  selector:
+    app: mmeraki-db-workload
+  ports:
+    - protocol: TCP
+      port: 3306
+      targetPort: 3306
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mmeraki-db-workload-deployment
+  namespace: weapps
+spec:
+  selector:
+    matchLabels:
+      app: mmeraki-db-workload
+  replicas: 1
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app: mmeraki-db-workload
+    spec:
+      containers:
+      - name: mmeraki-db-workload
+        envFrom:
+        - secretRef:
+            name: mmeraki-secrets
+            optional: false
+        image: mariadb:10.6.4 
+        ports: 
+        - containerPort: 3306
+        volumeMounts:
+        - mountPath: /var/lib/mysql
+          name: pinas-root
+          subPath: scripts/git/weapps-mmeraki-db/files
+      restartPolicy: Always
+      schedulerName: default-scheduler
+      volumes:
+      - name: pinas-root
+        persistentVolumeClaim:
+          claimName: pinas-root
+      - name: mmeraki-secrets
+        secret:
+          defaultMode: 420
+          optional: false
+          secretName: mmeraki-secrets

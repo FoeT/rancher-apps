@@ -1,0 +1,81 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: nginx-service
+  namespace: weapps
+spec:
+  selector:
+    app: nginx-workload
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 80
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nginx-workload-deployment
+  namespace: weapps
+spec:
+  selector:
+    matchLabels:
+      app: nginx-workload
+  replicas: 1
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app: nginx-workload
+    spec:
+      containers:
+      - name: nginx-workload
+        envFrom:
+        - configMapRef:
+            name: linuxserver-map
+            optional: false
+        image: nginx:alpine
+        ports: 
+        - containerPort: 80
+        volumeMounts:
+        - mountPath: /etc/nginx/conf.d
+          name: pinas-root
+          subPath: scripts/git/nginx/conf.d
+        - mountPath: /media
+          name: pinas-root
+          subPath: scripts/git
+        - mountPath: /var/www/html
+          name: pinas-root
+          subPath: docker/nextcloud/files          
+      restartPolicy: Always
+      volumes:
+      - name: pinas-root
+        persistentVolumeClaim:
+          claimName: pinas-root
+      - configMap:
+          defaultMode: 420
+          name: linuxserver-map
+          optional: false
+        name: linuxserver-map
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: nginx-workload-ingress
+  namespace: weapps
+spec:
+  ingressClassName: traefik
+  rules:
+  - host: nginx.mynetapp.site
+    http:
+      paths:
+      - pathType: ImplementationSpecific
+        backend:
+          service:
+            name: nginx-service
+            port:
+              number: 80
+  tls:
+  - hosts:
+    - nginx.mynetapp.site
+    secretName: mynetapp-site-production-tls

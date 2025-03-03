@@ -1,0 +1,13 @@
+# Base Fleet configuration
+defaultNamespace: weapps
+namespace: weapps
+targetCustomizations:
+  - name: default
+    helm:
+      # Common Helm values for all applications in this bundle
+      values:
+        global:
+          # Configure common services
+          ingressClass: traefik
+          domainSuffix: mynetapp.site
+          tlsSecretName: mynetapp-site-production-tls

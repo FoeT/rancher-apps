@@ -1,0 +1,16 @@
+defaultNamespace: cert-manager
+namespace: cert-manager
+helm:
+  chart: cert-manager
+  repo: https://charts.jetstack.io
+  version: ~1.11.0
+  releaseName: cert-manager
+  values:
+    installCRDs: true
+    prometheus:
+      enabled: false
+    webhook:
+      timeoutSeconds: 10
+      securePort: 10250
+    extraArgs:
+      - --dns01-recursive-nameservers=1.1.1.1:53,9.9.9.9:53
