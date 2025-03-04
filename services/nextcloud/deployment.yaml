@@ -55,7 +55,7 @@ spec:
     spec:
       containers:
       - name: nextcloud-workload
-        image: nextcloud:fpm
+        image: nextcloud:31-fpm
         ports: 
         - containerPort: 9000
         volumeMounts:
