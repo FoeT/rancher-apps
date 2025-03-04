@@ -1,2 +1,5 @@
 defaultNamespace: weapps
 namespace: weapps
+helm:
+  takeOwnership: true
+  releaseName: code-server

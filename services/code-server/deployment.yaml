@@ -15,7 +15,7 @@ data:
   TZ: Australia/Brisbane
 kind: ConfigMap
 metadata:
-  name: linuxserver-map
+  name: linuxserver-map-code
   namespace: weapps
 ---
 apiVersion: v1
@@ -86,7 +86,7 @@ spec:
       - name: code-workload
         envFrom:
         - configMapRef:
-            name: linuxserver-map
+            name: linuxserver-map-code
             optional: false
         - secretRef:
             name: code-server-secret
@@ -112,7 +112,7 @@ spec:
           claimName: pinas-root
       - configMap:
           defaultMode: 420
-          name: linuxserver-map
+          name: linuxserver-map-code
           optional: false
         name: code-map
       - name: code-secret
