@@ -11,3 +11,6 @@ spec:
   helmRepoURLRegex: "https://charts.*"
   clientSecretName: fleet-main
   forceSyncGeneration: 0
+  targetNamespace: weapps
+  targets:
+  - clusterName: local
