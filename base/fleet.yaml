@@ -1,6 +1,8 @@
 # Base Fleet configuration
 defaultNamespace: weapps
-namespace: weapps
+# Don't use Helm to prevent import issues with existing resources
+helm:
+  takeOwnership: true
 targetCustomizations:
   - name: default
     helm:

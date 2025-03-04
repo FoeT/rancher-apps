@@ -1,2 +1,4 @@
 defaultNamespace: weapps
-namespace: weapps
+# Don't use Helm to prevent import issues with existing resources
+helm:
+  takeOwnership: true
