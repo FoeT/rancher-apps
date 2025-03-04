@@ -1,0 +1,79 @@
+{
+    "apiVersion": "v1",
+    "kind": "Service",
+    "metadata": {
+        "annotations": {
+            "field.cattle.io/publicEndpoints": "[{\"addresses\":[\"172.16.0.95\"],\"port\":8080,\"protocol\":\"TCP\",\"serviceName\":\"weapps:pihole-dns\",\"allNodes\":false},{\"addresses\":[\"172.16.0.95\"],\"port\":53,\"protocol\":\"TCP\",\"serviceName\":\"weapps:pihole-dns\",\"allNodes\":false},{\"addresses\":[\"172.16.0.95\"],\"port\":53,\"protocol\":\"UDP\",\"serviceName\":\"weapps:pihole-dns\",\"allNodes\":false}]",
+            "meta.helm.sh/release-name": "rancher-apps-services-pihole",
+            "meta.helm.sh/release-namespace": "weapps",
+            "metallb.universe.tf/allow-shared-ip": "true",
+            "metallb.universe.tf/ip-allocated-from-pool": "my-pool",
+            "metallb.universe.tf/loadBalancerIPs": "172.16.0.95",
+            "objectset.rio.cattle.io/id": "default-rancher-apps-services-pihole-cattle-fleet-local-system"
+        },
+        "creationTimestamp": "2025-03-04T06:52:00Z",
+        "deletionGracePeriodSeconds": 0,
+        "deletionTimestamp": "2025-03-04T21:55:50Z",
+        "finalizers": [],
+        "labels": {
+            "app.kubernetes.io/managed-by": "Helm",
+            "objectset.rio.cattle.io/hash": "cb4977d1366c1540ee977ce30bf01ad3009b0387"
+        },
+        "name": "pihole-dns",
+        "namespace": "weapps",
+        "resourceVersion": "39283865",
+        "uid": "77060470-1015-49d4-b0f6-e15940a4eca5"
+    },
+    "spec": {
+        "allocateLoadBalancerNodePorts": true,
+        "clusterIP": "10.43.241.122",
+        "clusterIPs": [
+            "10.43.241.122"
+        ],
+        "externalTrafficPolicy": "Local",
+        "healthCheckNodePort": 31999,
+        "internalTrafficPolicy": "Local",
+        "ipFamilies": [
+            "IPv4"
+        ],
+        "ipFamilyPolicy": "SingleStack",
+        "ports": [
+            {
+                "name": "dns-web",
+                "nodePort": 30122,
+                "port": 8080,
+                "protocol": "TCP",
+                "targetPort": 80
+            },
+            {
+                "name": "dns-tcp",
+                "nodePort": 31359,
+                "port": 53,
+                "protocol": "TCP",
+                "targetPort": 53
+            },
+            {
+                "name": "dns-udp",
+                "nodePort": 31359,
+                "port": 53,
+                "protocol": "UDP",
+                "targetPort": 53
+            }
+        ],
+        "selector": {
+            "app": "pihole"
+        },
+        "sessionAffinity": "None",
+        "type": "LoadBalancer"
+    },
+    "status": {
+        "loadBalancer": {
+            "ingress": [
+                {
+                    "ip": "172.16.0.95",
+                    "ipMode": "VIP"
+                }
+            ]
+        }
+    }
+}

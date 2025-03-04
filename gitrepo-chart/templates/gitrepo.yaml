@@ -1,0 +1,17 @@
+apiVersion: fleet.cattle.io/v1alpha1
+kind: GitRepo
+metadata:
+  name: rancher-apps
+  namespace: fleet-local
+spec:
+  repo: https://github.com/FoeT/rancher-apps
+  branch: main
+  paths:
+  - .
+  helmRepoURLRegex: "https://charts.*"
+  clientSecretName: foet-git
+  forceSyncGeneration: 0
+  correctDrift:
+    enabled: true
+  targets:
+  - clusterName: local

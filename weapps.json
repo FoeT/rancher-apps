@@ -1,0 +1,67 @@
+{
+    "apiVersion": "v1",
+    "kind": "Namespace",
+    "metadata": {
+        "annotations": {
+            "cattle.io/status": "{\"Conditions\":[{\"Type\":\"ResourceQuotaInit\",\"Status\":\"True\",\"Message\":\"\",\"LastUpdateTime\":\"2025-03-04T06:51:30Z\"},{\"Type\":\"InitialRolesPopulated\",\"Status\":\"True\",\"Message\":\"\",\"LastUpdateTime\":\"2025-03-04T06:51:30Z\"}]}",
+            "lifecycle.cattle.io/create.namespace-auth": "true",
+            "meta.helm.sh/release-name": "rancher-apps-services-common",
+            "meta.helm.sh/release-namespace": "weapps",
+            "objectset.rio.cattle.io/id": "default-rancher-apps-services-common-cattle-fleet-local-system"
+        },
+        "creationTimestamp": "2025-03-04T06:51:29Z",
+        "deletionTimestamp": "2025-03-04T21:55:49Z",
+        "labels": {
+            "app.kubernetes.io/managed-by": "Helm",
+            "kubernetes.io/metadata.name": "weapps",
+            "name": "weapps",
+            "objectset.rio.cattle.io/hash": "18cdefd9859e67ebe086c699b1fa4c5a50baddd0"
+        },
+        "name": "weapps",
+        "resourceVersion": "39284800",
+        "uid": "dc260434-7324-4e2a-b4cd-6a3ccc5683a8"
+    },
+    "spec": {
+        "finalizers": []
+    },
+    "status": {
+        "conditions": [
+            {
+                "lastTransitionTime": "2025-03-04T21:56:01Z",
+                "message": "All resources successfully discovered",
+                "reason": "ResourcesDiscovered",
+                "status": "False",
+                "type": "NamespaceDeletionDiscoveryFailure"
+            },
+            {
+                "lastTransitionTime": "2025-03-04T21:56:01Z",
+                "message": "All legacy kube types successfully parsed",
+                "reason": "ParsedGroupVersions",
+                "status": "False",
+                "type": "NamespaceDeletionGroupVersionParsingFailure"
+            },
+            {
+                "lastTransitionTime": "2025-03-04T21:56:01Z",
+                "message": "All content successfully deleted, may be waiting on finalization",
+                "reason": "ContentDeleted",
+                "status": "False",
+                "type": "NamespaceDeletionContentFailure"
+            },
+            {
+                "lastTransitionTime": "2025-03-04T21:56:01Z",
+                "message": "Some resources are remaining: services. has 1 resource instances",
+                "reason": "SomeResourcesRemain",
+                "status": "True",
+                "type": "NamespaceContentRemaining"
+            },
+            {
+                "lastTransitionTime": "2025-03-04T21:56:01Z",
+                "message": "Some content in the namespace has finalizers remaining: service.kubernetes.io/load-balancer-cleanup in 1 resource instances",
+                "reason": "SomeFinalizersRemain",
+                "status": "True",
+                "type": "NamespaceFinalizersRemaining"
+            }
+        ],
+        "phase": "Terminating"
+    }
+}

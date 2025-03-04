@@ -1,17 +1,17 @@
 # Base Fleet configuration
 defaultNamespace: weapps
 # Don't use Helm to prevent import issues with existing resources
-helm:
-  takeOwnership: true
+#helm:
+#  takeOwnership: true
   # Skip resource application
-  force: false
-targetCustomizations:
-  - name: default
-    helm:
-      # Common Helm values for all applications in this bundle
-      values:
-        global:
-          # Configure common services
-          ingressClass: traefik
-          domainSuffix: mynetapp.site
-          tlsSecretName: mynetapp-site-production-tls
+#  force: false
+#targetCustomizations:
+#  - name: default
+#    helm:
+#      # Common Helm values for all applications in this bundle
+#      values:
+#        global:
+          # Configure common services#
+#          ingressClass: traefik
+#          domainSuffix: mynetapp.site
+#          tlsSecretName: mynetapp-site-production-tls

@@ -1,5 +1,11 @@
 #!/bin/bash
 
+# Create the weapps namespace if it doesn't exist
+echo "Creating weapps namespace..."
+kubectl create namespace weapps --dry-run=client -o yaml | kubectl apply -f -
+
+
+
 # Script to install the rancher-apps Fleet GitRepo
 
 echo "===== Installing Rancher Apps GitRepo ====="
