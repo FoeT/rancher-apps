@@ -1,5 +1,4 @@
 defaultNamespace: weapps
-namespace: weapps
 
 # Core infrastructure components - only cert-manager is managed by Fleet
 dependsOn:

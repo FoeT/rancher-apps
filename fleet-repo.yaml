@@ -11,6 +11,11 @@ spec:
   helmRepoURLRegex: "https://charts.*"
   clientSecretName: foet-git
   forceSyncGeneration: 0
-  targetNamespace: weapps
+  # Don't use a global targetNamespace to allow cluster-scoped resources
+  # Each component will set its own namespace as needed
   targets:
   - clusterName: local
+    # Force resources to be adopted
+    correctDrift:
+      enabled: true
+      force: true
