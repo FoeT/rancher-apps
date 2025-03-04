@@ -9,7 +9,7 @@ spec:
   paths:
   - .
   helmRepoURLRegex: "https://charts.*"
-  clientSecretName: fleet-main
+  clientSecretName: foet-git
   forceSyncGeneration: 0
   targetNamespace: weapps
   targets:
