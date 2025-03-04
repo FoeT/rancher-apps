@@ -24,7 +24,7 @@ spec:
   issuerRef:
     name: letsencrypt-production
     kind: ClusterIssuer
-  commonName: "coparentcare.com"
+  commonName: "*.coparentcare.com"
   dnsNames:
+  - "*.coparentcare.com"
   - "coparentcare.com"
-  - "www.coparentcare.com"
