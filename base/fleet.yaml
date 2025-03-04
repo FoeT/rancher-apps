@@ -3,6 +3,8 @@ defaultNamespace: weapps
 # Don't use Helm to prevent import issues with existing resources
 helm:
   takeOwnership: true
+  # Skip resource application
+  force: false
 targetCustomizations:
   - name: default
     helm:
