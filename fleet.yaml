@@ -2,7 +2,7 @@ defaultNamespace: weapps
 
 # Core infrastructure components - only cert-manager is managed by Fleet
 dependsOn:
-  - name: rancher-apps-cert-manager
+  - name: rancher-apps-services-cert-manager
 
 # Define all bundles to be deployed
 subFolders:
@@ -46,7 +46,7 @@ subFolderOptions:
       nginx:
         order: 10
         dependsOn:
-          - name: rancher-apps-cert-manager
+          - name: rancher-apps-services-cert-manager
           - name: common
           - name: traefik-config
           - name: databases
@@ -54,14 +54,14 @@ subFolderOptions:
       code-server:
         order: 15
         dependsOn:
-          - name: rancher-apps-cert-manager
+          - name: rancher-apps-services-cert-manager
           - name: common
           - name: traefik-config
           
       nextcloud:
         order: 18
         dependsOn:
-          - name: rancher-apps-cert-manager
+          - name: rancher-apps-services-cert-manager
           - name: common
           - name: traefik-config
           - name: nginx
@@ -69,7 +69,7 @@ subFolderOptions:
       exchat:
         order: 20
         dependsOn:
-          - name: rancher-apps-cert-manager
+          - name: rancher-apps-services-cert-manager
           - name: common
           - name: traefik-config
           - name: nginx
@@ -78,21 +78,21 @@ subFolderOptions:
       pihole:
         order: 30
         dependsOn:
-          - name: rancher-apps-cert-manager
+          - name: rancher-apps-services-cert-manager
           - name: common
           - name: traefik-config
       
       ha-proxy:
         order: 40
         dependsOn:
-          - name: rancher-apps-cert-manager
+          - name: rancher-apps-services-cert-manager
           - name: common
           - name: traefik-config
       
       coparentcare:
         order: 50
         dependsOn:
-          - name: rancher-apps-cert-manager
+          - name: rancher-apps-services-cert-manager
           - name: common
           - name: traefik-config
           - name: nginx
