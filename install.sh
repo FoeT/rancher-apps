@@ -8,9 +8,9 @@ echo "===== Installing Rancher Apps GitRepo ====="
 echo "Running setup script..."
 ./setup.sh
 
-# Check if the fleet-main secret exists
-if ! kubectl get secret -n fleet-local fleet-main &>/dev/null; then
-  echo "Creating fleet-main secret for GitHub authentication..."
+# Check if the foet-git secret exists
+if ! kubectl get secret -n fleet-local foet-git &>/dev/null; then
+  echo "Creating foet-git secret for GitHub authentication..."
   
   # Prompt for GitHub credentials if needed
   read -p "Enter GitHub username (default: FoeT): " GITHUB_USER
@@ -25,9 +25,11 @@ if ! kubectl get secret -n fleet-local fleet-main &>/dev/null; then
   fi
   
   # Create the secret
-  kubectl create secret generic fleet-main -n fleet-local \
+  kubectl create secret generic foet-git -n fleet-local \
     --from-literal=username=${GITHUB_USER} \
     --from-literal=password=${GITHUB_TOKEN}
+else
+  echo "Using existing foet-git secret for GitHub authentication"
 fi
 
 # Apply the Fleet GitRepo configuration
