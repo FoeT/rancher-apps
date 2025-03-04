@@ -72,16 +72,6 @@ spec:
     metadata:
       labels:
         app: code-workload
-    spec:
-      affinity:
-        nodeAffinity:
-          requiredDuringSchedulingIgnoredDuringExecution:
-            nodeSelectorTerms:
-            - matchExpressions:
-              - key: kubernetes.io/hostname
-                operator: In
-                values:
-                - "ranchervm1"    
       containers:
       - name: code-workload
         envFrom:

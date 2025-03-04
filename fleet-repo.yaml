@@ -11,6 +11,7 @@ metadata:
 spec:
   repo: https://github.com/FoeT/rancher-apps
   branch: main
+#  revision: 1eed8c5f8685818e2327c5d65d0a3cb12c5715fb
   paths:
   - .
   helmRepoURLRegex: "https://charts.*"
