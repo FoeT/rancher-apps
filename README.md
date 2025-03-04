@@ -16,6 +16,18 @@ To deploy these applications:
    kubectl apply -f fleet-repo.yaml
    ```
 
+## Managing the Repository
+
+Use the included update script for easy git operations:
+
+```bash
+# Make your changes, then run:
+./update-repo.sh -m "Your commit message" -p
+
+# Or without arguments for interactive prompts:
+./update-repo.sh
+```
+
 ## Directory Structure
 
 ```
