@@ -1,0 +1,6 @@
+defaultNamespace: weapps
+helm:
+  releaseName: mmeraki
+  version: v3
+  
+  

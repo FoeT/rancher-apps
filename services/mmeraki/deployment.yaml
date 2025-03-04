@@ -1,0 +1,83 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: mmeraki-service
+  namespace: weapps
+spec:
+  selector:
+    app: mmeraki-workload
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 8000
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: mmeraki-service-ingress
+  namespace: weapps
+spec:
+  ingressClassName: traefik
+  rules:
+  - host: mm.mynetapp.site
+    http:
+      paths:
+      - pathType: ImplementationSpecific
+        backend:
+          service:
+            name: nginx-service
+            port:
+              number: 80
+  tls:
+  - hosts:
+    - mm.mynetapp.site
+    secretName: mynetapp-site-production-tls     
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mmeraki-workload-deployment
+  namespace: weapps
+spec:
+  selector:
+    matchLabels:
+      app: mmeraki-workload
+  replicas: 1
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app: mmeraki-workload
+    spec:    
+      containers:
+      - envFrom:
+        - secretRef:
+            name: mmeraki-secrets
+            optional: false
+        image: ghcr.io/foet/mmeraki:latest
+        imagePullPolicy: Always
+        name: mmeraki-workload
+        ports:
+        - containerPort: 8000
+          name: rancher
+          protocol: TCP
+        volumeMounts:
+        - mountPath: /var/www/design/media
+          name: pinas-root
+          subPath: scripts/git/mmeraki/media      
+        - mountPath: /var/www/design/static
+          name: pinas-root
+          subPath: scripts/git/mmeraki/static            
+      imagePullSecrets:
+      - name: github-container-registry
+      restartPolicy: Always
+      volumes:
+      - name: pinas-root
+        persistentVolumeClaim:
+          claimName: pinas-root
+      - name: mmeraki-secrets
+        secret:
+          defaultMode: 420
+          optional: false
+          secretName: mmeraki-secrets

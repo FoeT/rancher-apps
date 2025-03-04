@@ -1,0 +1,78 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: foretold-service
+  namespace: weapps
+spec:
+  selector:
+    app: foretold-workload
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 8000
+---
+apiVersion: traefik.containo.us/v1alpha1
+kind: IngressRoute
+metadata:
+  name: foretold-service-ingress
+  namespace: weapps
+  annotations: 
+    kubernetes.io/ingress.class: traefik-external
+spec:
+  entryPoints:
+    - websecure
+  routes:
+    - match: Host(`foretold.mynetapp.site`)
+      kind: Rule
+      services:
+        - name: nginx-service
+          port: 80      
+  tls:
+    secretName: mynetapp-site-production-tls          
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: foretold-workload-deployment
+  namespace: weapps
+spec:
+  selector:
+    matchLabels:
+      app: foretold-workload
+  replicas: 1
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app: foretold-workload
+    spec:    
+      containers:
+      - envFrom:
+        - secretRef:
+            name: foretold-secrets
+            optional: false
+        - secretRef:
+            name: maria-db-secrets
+            optional: false
+        image: ghcr.io/foet/foretold:latest
+        imagePullPolicy: Always
+        name: foretold-workload
+        ports:
+        - containerPort: 8000
+          name: rancher
+          protocol: TCP
+      imagePullSecrets:
+      - name: github-container-registry
+      restartPolicy: Always
+      volumes:
+      - name: foretold-secrets
+        secret:
+          defaultMode: 420
+          optional: false
+          secretName: foretold-secrets
+      - configMap:
+          defaultMode: 420
+          name: maria-db-secrets
+          optional: false
+        name: maria-db-secrets

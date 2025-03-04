@@ -1,0 +1,4 @@
+defaultNamespace: weapps
+helm:
+  releaseName: foretold
+  version: v3
