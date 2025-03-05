@@ -3,6 +3,11 @@ kind: GitRepo
 metadata:
   name: rancher-apps
   namespace: fleet-local
+  annotations:
+    meta.helm.sh/release-name: rancher-apps
+    meta.helm.sh/release-namespace: weapps
+  labels:
+    app.kubernetes.io/managed-by: Helm
 spec:
   repo: https://github.com/FoeT/rancher-apps
   branch: main
