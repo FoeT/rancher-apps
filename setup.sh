@@ -17,6 +17,7 @@ kubectl apply -f services/traefik-config/middlewares.yaml
 
 # Create persistent volume claim
 echo "Creating persistent volume claim..."
+kubectl patch pv pinas -p '{"spec":{"claimRef": null}}'
 kubectl apply -f base/persistent-volumes.yaml
 
 # Create placeholder for secrets (replace with actual secrets)
@@ -24,7 +25,7 @@ echo "You need to create actual secrets before deploying applications"
 echo "To create the github container registry secret, run:"
 echo 'kubectl create secret docker-registry github-container-registry --namespace=weapps --docker-server=ghcr.io --docker-username=YOUR_USERNAME --docker-password=YOUR_PAT --docker-email=YOUR_EMAIL'
 echo ""
-
+./setup_git_pull.sh
 # Database secrets note
 echo "NOTE: Database secrets are included in the YAML files. If you need to modify them, edit the files in services/databases/"
 echo ""
