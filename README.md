@@ -7,18 +7,24 @@ This repository contains organized YAML configurations for deploying application
 To deploy these applications:
 
 1. Clone this repository
-2. Run the setup script to initialize resources and deploy static workloads:
+2. Create a GitHub read-only token (Personal Access Token):
+   - Go to GitHub → Settings → Developer Settings → Personal Access Tokens → Fine-grained tokens
+   - Create a token with read-only access to your repositories
+   - Update the `READ_ONLY_TOKEN` variable in `new_git_pull.sh` with your token
+3. Run the setup script to initialize resources and deploy static workloads:
    ```bash
    ./setup.sh
    ```
-3. Apply the Fleet GitRepo configuration to deploy Fleet-managed workloads:
+4. Apply the Fleet GitRepo configuration to deploy Fleet-managed workloads:
    ```bash
    ./fleet-repo.sh
    ```
 
 ## Managing the Repository
 
-Use the included update script for easy git operations:
+### Updating and Pushing Changes
+
+Use the included update script for pushing changes to the repository:
 
 ```bash
 # Make your changes, then run:
@@ -27,6 +33,22 @@ Use the included update script for easy git operations:
 # Or without arguments for interactive prompts:
 ./update-repo.sh
 ```
+
+### Pulling Updates
+
+To pull the latest changes from the repository and automatically update deployments:
+
+```bash
+./new_git_pull.sh
+```
+
+This script:
+1. Uses a read-only GitHub token for secure access
+2. Pulls the latest changes from the repository
+3. Updates the GitHub container registry secret
+4. Applies any changes to static workloads
+
+The script requires a read-only GitHub token that you'll need to set in the `READ_ONLY_TOKEN` variable.
 
 ## Directory Structure
 

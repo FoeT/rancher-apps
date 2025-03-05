@@ -9,16 +9,16 @@ kubectl create namespace weapps --dry-run=client -o yaml | kubectl apply -f -
 
 # Create IngressClass resources for K3s Traefik
 echo "Creating IngressClass resources..."
-kubectl apply -f services/traefik-config/ingressclass.yaml
+kubectl apply -f fleet/services/traefik-config/ingressclass.yaml
 
 # Create middleware resources
 echo "Creating middleware resources..."
-kubectl apply -f services/traefik-config/middlewares.yaml
+kubectl apply -f fleet/services/traefik-config/middlewares.yaml
 
 # Create persistent volume claim
 echo "Creating persistent volume claim..."
 kubectl patch pv pinas -p '{"spec":{"claimRef": null}}'
-kubectl apply -f base/persistent-volumes.yaml
+kubectl apply -f fleet/base/persistent-volumes.yaml
 
 # Create placeholder for secrets (replace with actual secrets)
 echo "You need to create actual secrets before deploying applications"
@@ -38,7 +38,7 @@ echo ""
 # Deploy static workloads (not managed by Fleet)
 echo "Deploying static workloads..."
 echo "- Deploying PiHole..."
-#kubectl apply -f static/pihole/deployment.yaml
+kubectl apply -f static/pihole/deployment.yaml
 
 # Apply the Fleet GitRepo configuration
 echo "You can now apply this configuration to your Fleet using:"
