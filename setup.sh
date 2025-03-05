@@ -29,16 +29,17 @@ else
 fi
 
 # Create IngressClass resources for K3s Traefik
-echo "Creating IngressClass resources..."
-kubectl apply -f fleet/services/traefik-config/ingressclass.yaml
+#echo "Creating IngressClass resources..."
+#kubectl apply -f fleet/services/traefik-config/ingressclass.yaml
 
 # Create middleware resources
-echo "Creating middleware resources..."
-kubectl apply -f fleet/services/traefik-config/middlewares.yaml
+#echo "Creating middleware resources..."
+#kubectl apply -f fleet/services/traefik-config/middlewares.yaml
 
 # Create persistent volume claim
 echo "Creating persistent volume claim..."
 kubectl patch pv pinas -p '{"spec":{"claimRef": null}}'
+sleep 3
 kubectl apply -f fleet/base/persistent-volumes.yaml
 
 # Create placeholder for secrets (replace with actual secrets)
