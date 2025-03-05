@@ -1,0 +1,86 @@
+# Base Fleet configuration
+defaultNamespace: weapps
+
+# Use Helm with takeOwnership to address existing GitRepo issues
+helm:
+  takeOwnership: true   # This will add the required labels and annotations to existing resources
+  force: true           # Force resource updates to address content hash issues
+  releaseName: rancher-apps  # Specify the release name to match existing GitRepo
+  releaseNamespace: weapps   # Specify the release namespace for annotations
+  timeoutSeconds: 600    # Increase timeout for deployments
+
+# Add global ownership annotations for existing resources
+defaultLabels:
+  app.kubernetes.io/managed-by: Helm
+
+defaultAnnotations:
+  meta.helm.sh/release-namespace: weapps
+  meta.helm.sh/release-name: rancher-apps
+
+# Add troubleshooting options
+paused: false          # Ensure deployments are not paused
+failurePolicy: ignore  # Continue deployment even if some resources fail
+
+targetCustomizations:
+  - name: default
+    namespaceOptions:
+      # Configure namespace ownership
+      labels:
+        app.kubernetes.io/managed-by: Helm
+      annotations:
+        meta.helm.sh/release-name: rancher-apps-services-common
+        meta.helm.sh/release-namespace: weapps
+    
+    # Add specific resources to handle existing PVCs
+    resources:
+      - name: pinas-root-pvc-ownership
+        kind: PersistentVolumeClaim
+        name: pinas-root
+        namespace: weapps
+        force: true
+        patches:
+          - op: add
+            path: /metadata/labels
+            value:
+              app.kubernetes.io/managed-by: Helm
+          - op: add
+            path: /metadata/annotations
+            value:
+              meta.helm.sh/release-name: rancher-apps
+              meta.helm.sh/release-namespace: weapps
+              
+      - name: traefik-middleware-ownership
+        kind: Middleware
+        apiVersion: traefik.containo.us/v1alpha1
+        name: default-headers
+        namespace: weapps
+        force: true
+        patches:
+          - op: add
+            path: /metadata/labels
+            value:
+              app.kubernetes.io/managed-by: Helm
+          - op: add
+            path: /metadata/annotations
+            value:
+              meta.helm.sh/release-name: rancher-apps-services-traefik-config
+              meta.helm.sh/release-namespace: weapps
+    
+    helm:
+      # Common Helm values for all applications in this bundle
+      values:
+        global:           # Configure common services
+          ingressClass: traefik
+          domains:
+            - domainSuffix: mynetapp.site
+              tlsSecretName: mynetapp-site-production-tls
+            - domainSuffix: coparentcare.com
+              tlsSecretName: coparentcare-com-production-tls
+          traefik:
+            middleware:
+              existingPolicyOverride: true  # Allow taking ownership of existing middleware
+              annotations:
+                meta.helm.sh/release-name: rancher-apps-services-traefik-config
+                meta.helm.sh/release-namespace: weapps
+              labels:
+                app.kubernetes.io/managed-by: Helm
