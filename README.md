@@ -9,8 +9,15 @@ To deploy these applications:
 1. Clone this repository
 2. Create a GitHub read-only token (Personal Access Token):
    - Go to GitHub → Settings → Developer Settings → Personal Access Tokens → Fine-grained tokens
-   - Create a token with read-only access to your repositories
-   - Update the `READ_ONLY_TOKEN` variable in `new_git_pull.sh` with your token
+   - Create a token with read-only access to your repositories (packages read permission is also needed for container registry access)
+   - Store the token in a Kubernetes secret (recommended):
+     ```bash
+     kubectl create secret generic github-readonly-token -n fleet-local --from-literal=token=YOUR_TOKEN
+     ```
+   - This token will be used for:
+     - Git repository access
+     - GitHub Container Registry access for all deployments 
+     - Fleet GitRepo image pulls
 3. Run the setup script to initialize resources and deploy static workloads:
    ```bash
    ./setup.sh
@@ -21,6 +28,22 @@ To deploy these applications:
    ```
 
 ## Managing the Repository
+
+## Important Notes
+
+### Bundle Naming Convention
+
+Fleet automatically prefixes bundles with the GitRepo name. For this repository, bundles will be named:
+- `rancher-apps-fleet-` (main bundle)
+- `rancher-apps-fleet-services-cert-manager` (cert-manager bundle)
+- `rancher-apps-fleet-services-common` (common services bundle)
+- etc.
+
+When using `dependsOn` in your fleet.yaml files, always use the full bundle name including this prefix. For example:
+```yaml
+dependsOn:
+  - name: rancher-apps-fleet-services-cert-manager
+```
 
 ### Updating and Pushing Changes
 
@@ -48,7 +71,10 @@ This script:
 3. Updates the GitHub container registry secret
 4. Applies any changes to static workloads
 
-The script requires a read-only GitHub token that you'll need to set in the `READ_ONLY_TOKEN` variable.
+The script uses the GitHub token from the Kubernetes secret named `github-readonly-token` in the `fleet-local` namespace. This same token is used for:
+- Git repository access
+- GitHub Container Registry authentication
+- Updating the Kubernetes secret used by container deployments
 
 ## Directory Structure
 

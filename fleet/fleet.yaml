@@ -2,7 +2,7 @@ defaultNamespace: weapps
 
 # Core infrastructure components - only cert-manager is managed by Fleet
 dependsOn:
-  - name: rancher-apps-services-cert-manager
+  - name: rancher-apps-fleet-services-cert-manager
 
 # Define all bundles to be deployed
 subFolders:
