@@ -1,3 +1,4 @@
+cat <<EOF | kubectl apply -f -
 apiVersion: fleet.cattle.io/v1alpha1
 kind: GitRepo
 metadata:
@@ -13,7 +14,7 @@ spec:
   branch: main
 #  revision: 1eed8c5f8685818e2327c5d65d0a3cb12c5715fb
   paths:
-  - .
+  - fleet
   helmRepoURLRegex: "https://charts.*"
   clientSecretName: foet-git
   forceSyncGeneration: 0
@@ -24,3 +25,4 @@ spec:
   # Each component will set its own namespace as needed
   targets:
   - clusterName: local
+EOF

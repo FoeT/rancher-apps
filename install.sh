@@ -35,7 +35,7 @@ fi
 
 # Apply the Fleet GitRepo configuration
 echo "Applying Fleet GitRepo configuration..."
-kubectl apply -f fleet-repo.yaml
-
+#kubectl apply -f fleet-repo.yaml
+./fleet-repo.sh
 echo "===== Installation complete ====="
 echo "Check GitRepo status with: kubectl get gitrepo -n fleet-local rancher-apps"

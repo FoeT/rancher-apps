@@ -35,6 +35,11 @@ echo "To create the Cloudflare token secret for cert-manager, run:"
 echo 'kubectl create secret generic cloudflare-token-secret --namespace=cert-manager --from-literal=cloudflare-token="your-cloudflare-api-token"'
 echo ""
 
+# Deploy static workloads (not managed by Fleet)
+echo "Deploying static workloads..."
+echo "- Deploying PiHole..."
+#kubectl apply -f static/pihole/deployment.yaml
+
 # Apply the Fleet GitRepo configuration
 echo "You can now apply this configuration to your Fleet using:"
 echo "  kubectl apply -f fleet-repo.yaml"

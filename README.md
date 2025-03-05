@@ -1,19 +1,19 @@
 # Rancher Fleet Applications
 
-This repository contains organized YAML configurations for deploying applications using Fleet in Rancher.
+This repository contains organized YAML configurations for deploying applications using Fleet in Rancher, along with static workloads deployed directly.
 
 ## Quick Start
 
 To deploy these applications:
 
 1. Clone this repository
-2. Run the setup script to initialize resources:
+2. Run the setup script to initialize resources and deploy static workloads:
    ```bash
    ./setup.sh
    ```
-3. Apply the Fleet GitRepo configuration:
+3. Apply the Fleet GitRepo configuration to deploy Fleet-managed workloads:
    ```bash
-   kubectl apply -f fleet-repo.yaml
+   ./fleet-repo.sh
    ```
 
 ## Managing the Repository
@@ -32,68 +32,73 @@ Use the included update script for easy git operations:
 
 ```
 /
-├── base/                         # Shared configurations
-│   ├── fleet.yaml                # Base Fleet config
-│   ├── persistent-volumes.yaml   # PVC definitions
-│   └── secrets.yaml              # Secret templates
+├── fleet/                        # Fleet-managed workloads
+│   ├── base/                     # Shared configurations
+│   │   ├── fleet.yaml            # Base Fleet config
+│   │   ├── persistent-volumes.yaml # PVC definitions
+│   │   └── secrets.yaml          # Secret templates
+│   │
+│   ├── services/                 # Application configurations
+│   │   ├── cert-manager/         # TLS certificate management
+│   │   │   ├── certificates.yaml
+│   │   │   ├── fleet.yaml
+│   │   │   └── issuers.yaml
+│   │   │
+│   │   ├── common/               # Common resources
+│   │   │   ├── fleet.yaml
+│   │   │   └── namespace.yaml
+│   │   │
+│   │   ├── databases/            # Database services (start first)
+│   │   │   ├── fleet.yaml        # Databases parent config
+│   │   │   ├── xchat-db/         # ExChat database
+│   │   │   │   ├── deployment.yaml
+│   │   │   │   └── fleet.yaml
+│   │   │   ├── foretold-db/      # Foretold database
+│   │   │   │   ├── deployment.yaml
+│   │   │   │   └── fleet.yaml
+│   │   │   └── mm-db/            # MM database
+│   │   │       ├── deployment.yaml
+│   │   │       └── fleet.yaml
+│   │   │
+│   │   ├── coparentcare/         # Coparentcare application
+│   │   │   ├── deployment.yaml
+│   │   │   └── fleet.yaml
+│   │   │
+│   │   ├── code-server/          # Code Server IDE
+│   │   │   ├── deployment.yaml
+│   │   │   └── fleet.yaml
+│   │   │
+│   │   ├── exchat/               # Exchat application
+│   │   │   ├── deployment.yaml
+│   │   │   ├── dev-environment.yaml
+│   │   │   └── fleet.yaml
+│   │   │
+│   │   ├── ha-proxy/             # Home Assistant proxy
+│   │   │   ├── deployment.yaml
+│   │   │   └── fleet.yaml
+│   │   │
+│   │   ├── nextcloud/            # Nextcloud
+│   │   │   ├── deployment.yaml
+│   │   │   └── fleet.yaml
+│   │   │
+│   │   ├── nginx/                # NGINX web server
+│   │   │   ├── deployment.yaml
+│   │   │   └── fleet.yaml
+│   │   │
+│   │   └── traefik-config/       # Traefik configuration (for existing instance)
+│   │       ├── fleet.yaml
+│   │       ├── ingressclass.yaml
+│   │       └── middlewares.yaml
+│   │
+│   └── fleet.yaml                # Main Fleet configuration
 │
-├── services/                     # Application configurations
-│   ├── cert-manager/             # TLS certificate management
-│   │   ├── certificates.yaml
-│   │   ├── fleet.yaml
-│   │   └── issuers.yaml
-│   │
-│   ├── common/                   # Common resources
-│   │   ├── fleet.yaml
-│   │   └── namespace.yaml
-│   │
-│   ├── databases/                # Database services (start first)
-│   │   ├── fleet.yaml            # Databases parent config
-│   │   ├── xchat-db/             # ExChat database
-│   │   │   ├── deployment.yaml
-│   │   │   └── fleet.yaml
-│   │   ├── foretold-db/          # Foretold database
-│   │   │   ├── deployment.yaml
-│   │   │   └── fleet.yaml
-│   │   └── mm-db/                # MM database
-│   │       ├── deployment.yaml
-│   │       └── fleet.yaml
-│   │
-│   ├── coparentcare/             # Coparentcare application
-│   │   ├── deployment.yaml
-│   │   └── fleet.yaml
-│   │
-│   ├── code-server/              # Code Server IDE
-│   │   ├── deployment.yaml
-│   │   └── fleet.yaml
-│   │
-│   ├── exchat/                   # Exchat application
-│   │   ├── deployment.yaml
-│   │   ├── dev-environment.yaml
-│   │   └── fleet.yaml
-│   │
-│   ├── ha-proxy/                 # Home Assistant proxy
-│   │   ├── deployment.yaml
-│   │   └── fleet.yaml
-│   │
-│   ├── nextcloud/                # Nextcloud
-│   │   ├── deployment.yaml
-│   │   └── fleet.yaml
-│   │
-│   ├── nginx/                    # NGINX web server
-│   │   ├── deployment.yaml
-│   │   └── fleet.yaml
-│   │
+├── static/                       # Directly deployed workloads (not Fleet-managed)
 │   ├── pihole/                   # Pi-hole DNS service
-│   │   ├── deployment.yaml
-│   │   └── fleet.yaml
-│   │
-│   └── traefik-config/           # Traefik configuration (for existing instance)
-│       ├── fleet.yaml
-│       ├── ingressclass.yaml
-│       └── middlewares.yaml
+│   │   └── deployment.yaml
+│   └── README.md                 # Documentation for static workloads
 │
-└── fleet.yaml                    # Main Fleet configuration
+├── setup.sh                      # Setup script to deploy static workloads
+└── fleet-repo.sh                 # Script to register Fleet GitRepo
 ```
 
 ## Deployment Order
@@ -117,9 +122,11 @@ The applications deploy in the following order:
    - Code Server
    - Nextcloud
    - ExChat (Social application)
-   - Pi-hole (DNS server)
    - Home Assistant Proxy
    - Coparentcare
+
+5. Static (Direct) Deployments:
+   - Pi-hole (DNS server) - deployed via setup.sh
 
 ## Usage
 

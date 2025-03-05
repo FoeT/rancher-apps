@@ -71,11 +71,7 @@ subFolderOptions:
           - name: nginx
           - name: databases/xchat-db
       
-      pihole:
-        order: 30
-        dependsOn:
-          - name: common
-          - name: traefik-config
+      # pihole removed from Fleet management - now deployed directly via setup.sh
       
       ha-proxy:
         order: 40
