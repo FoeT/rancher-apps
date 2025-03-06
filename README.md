@@ -192,6 +192,48 @@ To deploy these applications using Fleet:
 - Most applications mount files from the `pinas-root` persistent volume
 - Uses the existing Traefik instance in K3s (kube-system namespace)
 
+## Certificate Management
+
+TLS certificates are managed using cert-manager with Cloudflare DNS validation. This requires:
+
+1. A valid Cloudflare API token with:
+   - Zone.Zone: Read permissions
+   - Zone.DNS: Edit permissions
+   - Access to all domains (mynetapp.site, coparentcare.com, etc.)
+
+2. The token stored as a Kubernetes secret:
+   ```bash
+   kubectl create secret generic cloudflare-token-secret --namespace=cert-manager --from-literal=cloudflare-token="your-cloudflare-api-token"
+   ```
+
+3. Proper DNS setup in Cloudflare for all domains
+
+### Certificate Management Scripts
+
+A dedicated script is provided for certificate management:
+
+```bash
+# List all certificates and their status
+./renew-certificates.sh list
+
+# Renew a specific certificate
+./renew-certificates.sh renew mynetapp-site
+
+# Renew all certificates (useful for expired certs)
+./renew-certificates.sh renew-all
+
+# Check certificate details and troubleshoot issues
+./renew-certificates.sh check coparentcare-com
+
+# Verify Cloudflare API token permissions
+./renew-certificates.sh verify-token
+
+# Update the Cloudflare API token
+./renew-certificates.sh update-token
+```
+
+**Important**: If certificates are expired or failing to issue, the most common cause is an invalid or expired Cloudflare API token. Use the script to verify and update your token.
+
 ## Domain Configuration
 
 - Primary domain: mynetapp.site
