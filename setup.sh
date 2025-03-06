@@ -53,6 +53,11 @@ echo ""
 echo "To create the Cloudflare token secret for cert-manager, run:"
 echo 'kubectl create secret generic cloudflare-token-secret --namespace=cert-manager --from-literal=cloudflare-token="your-cloudflare-api-token"'
 echo ""
+echo "IMPORTANT: The Cloudflare API token needs to have the following permissions:"
+echo "- Zone.Zone: Read"
+echo "- Zone.DNS: Edit"
+echo "- And must have access to all zones you want to manage (mynetapp.site, coparentcare.com, etc.)"
+echo ""
 
 # Deploy static workloads (not managed by Fleet)
 echo "Deploying static workloads..."

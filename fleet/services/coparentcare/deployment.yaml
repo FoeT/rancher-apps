@@ -21,4 +21,4 @@ spec:
   tls:
   - hosts:
     - www.coparentcare.com
-    secretName: coparentcare-com-tls
+    secretName: www-coparentcare-com-tls

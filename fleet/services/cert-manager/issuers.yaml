@@ -12,6 +12,7 @@ spec:
     privateKeySecretRef:
       name: letsencrypt-production
     solvers:
+      # Specific solver for mynetapp.site
       - dns01:
           cloudflare:
             email: admin@weapps.com.au
@@ -21,7 +22,22 @@ spec:
         selector:
           dnsZones:
             - "mynetapp.site"
+      
+      # Specific solver for coparentcare.com
+      - dns01:
+          cloudflare:
+            email: admin@weapps.com.au
+            apiTokenSecretRef:
+              name: cloudflare-token-secret
+              key: cloudflare-token
+        selector:
+          dnsZones:
             - "coparentcare.com"
+          
+      # HTTP-01 solver as fallback or for non-wildcard domains
+      - http01:
+          ingress:
+            class: traefik
 ---
 # LetsEncrypt Staging (for testing)
 apiVersion: cert-manager.io/v1
@@ -35,6 +51,7 @@ spec:
     privateKeySecretRef:
       name: letsencrypt-staging
     solvers:
+      # Specific solver for mynetapp.site
       - dns01:
           cloudflare:
             email: admin@weapps.com.au
@@ -44,7 +61,22 @@ spec:
         selector:
           dnsZones:
             - "mynetapp.site"
+      
+      # Specific solver for coparentcare.com
+      - dns01:
+          cloudflare:
+            email: admin@weapps.com.au
+            apiTokenSecretRef:
+              name: cloudflare-token-secret
+              key: cloudflare-token
+        selector:
+          dnsZones:
             - "coparentcare.com"
+      
+      # HTTP-01 solver as fallback or testing
+      - http01:
+          ingress:
+            class: traefik
 ---
 # Cloudflare API Token Secret
 apiVersion: v1

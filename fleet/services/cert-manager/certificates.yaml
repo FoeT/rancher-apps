@@ -14,6 +14,7 @@ spec:
   - "*.mynetapp.site"
   - "mynetapp.site"
 ---
+# Certificate with DNS-01 challenge (for wildcard support)
 apiVersion: cert-manager.io/v1
 kind: Certificate
 metadata:
@@ -22,9 +23,24 @@ metadata:
 spec:
   secretName: coparentcare-com-tls
   issuerRef:
-    name: letsencrypt-production
+    name: letsencrypt-staging
     kind: ClusterIssuer
   commonName: "*.coparentcare.com"
   dnsNames:
   - "*.coparentcare.com"
   - "coparentcare.com"
+---
+# Specific certificate for www subdomain with HTTP-01 challenge (for simpler validation)
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: www-coparentcare-com
+  namespace: weapps
+spec:
+  secretName: www-coparentcare-com-tls
+  issuerRef:
+    name: letsencrypt-production
+    kind: ClusterIssuer
+  commonName: "www.coparentcare.com"
+  dnsNames:
+  - "www.coparentcare.com"
