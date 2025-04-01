@@ -1,57 +1,19 @@
-apiVersion: v1
-kind: Service
-metadata:
-  name: exchat-dev-service
-  namespace: weapps
-spec:
-  selector:
-    app: exchat-dev-workload
-  ports:
-    - protocol: TCP
-      port: 80
-      targetPort: 8000
----
-apiVersion: networking.k8s.io/v1
-kind: Ingress
-metadata:
-  name: exchat-dev-service-ingress
-  namespace: weapps
-  annotations:
-    traefik.ingress.kubernetes.io/router.entrypoints: websecure
-    traefik.ingress.kubernetes.io/router.tls: "true"
-spec:
-  ingressClassName: traefik
-  rules:
-  - host: exchatdev.mynetapp.site
-    http:
-      paths:
-      - pathType: ImplementationSpecific
-        backend:
-          service:
-            name: nginx-service
-            port:
-              number: 80
-  tls:
-  - hosts:
-    - exchatdev.mynetapp.site
-    secretName: mynetapp-site-production-tls
----
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: exchat-dev-deployment
+  name: exchat-dev-claude
   namespace: weapps
 spec:
   selector:
     matchLabels:
-      app: exchat-dev-workload
+      app: exchat-dev-claude
   replicas: 1
   strategy:
     type: Recreate
   template:
     metadata:
       labels:
-        app: exchat-dev-workload
+        app: exchat-dev-claude
     spec:    
       containers:
       - envFrom:
@@ -60,7 +22,7 @@ spec:
             optional: false
         image: python:3.10
         imagePullPolicy: Always
-        name: exchat-dev-workload
+        name: exchat-dev-claude
         stdin: true
         ports:
         - containerPort: 8000
