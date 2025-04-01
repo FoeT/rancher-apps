@@ -45,7 +45,7 @@ spec:
   selector:
     matchLabels:
       app: exchat-dev-workload
-  replicas: 1
+  replicas: 2
   strategy:
     type: Recreate
   template:
