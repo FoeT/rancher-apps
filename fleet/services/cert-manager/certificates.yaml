@@ -14,33 +14,21 @@ spec:
   - "*.mynetapp.site"
   - "mynetapp.site"
 ---
-# Certificate with DNS-01 challenge (for wildcard support)
 apiVersion: cert-manager.io/v1
 kind: Certificate
 metadata:
-  name: coparentcare-com
+  name: coparentcare-com-wildcard
   namespace: weapps
 spec:
-  secretName: coparentcare-com-tls
+  # The secret that will be created and contain the TLS certificate and key.
+  secretName: coparentcare-com-wildcard-tls
+
+  # Use your production issuer once you have confirmed your setup with the staging issuer.
   issuerRef:
-    name: letsencrypt-staging
+    name: letsencrypt-production # Changed from letsencrypt-staging
     kind: ClusterIssuer
-  commonName: "*.coparentcare.com"
+
+  # The primary SAN. The first dnsName is also used as the Common Name.
   dnsNames:
   - "*.coparentcare.com"
   - "coparentcare.com"
----
-# Specific certificate for www subdomain with HTTP-01 challenge (for simpler validation)
-apiVersion: cert-manager.io/v1
-kind: Certificate
-metadata:
-  name: www-coparentcare-com
-  namespace: weapps
-spec:
-  secretName: www-coparentcare-com-tls
-  issuerRef:
-    name: letsencrypt-production
-    kind: ClusterIssuer
-  commonName: "www.coparentcare.com"
-  dnsNames:
-  - "www.coparentcare.com"
