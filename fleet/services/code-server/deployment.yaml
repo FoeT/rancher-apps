@@ -91,7 +91,7 @@ spec:
           subPath: scripts/
         - mountPath: /config
           name: pinas-scripts
-          subPath: vdrives/rancher/weapps/code/
+          subPath: docker/code
         - mountPath: /config/workspace/rancher
           name: pinas-scripts
           subPath: docker/ranchersetup  
