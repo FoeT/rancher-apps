@@ -13,6 +13,8 @@ data:
   PGID: "1000"
   PUID: "1000"
   TZ: Australia/Brisbane
+  YOUR_GOOGLE_API_KEY: AIzaSyDPs9DY1rph5iJueBDqkt5vLEnGz-0BBR0
+  SEARCH_ENGINE_ID: 36e74b55da80445cc
 kind: ConfigMap
 metadata:
   name: linuxserver-map-code
