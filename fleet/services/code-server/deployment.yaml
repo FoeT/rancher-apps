@@ -92,6 +92,9 @@ spec:
         - mountPath: /config
           name: pinas-scripts
           subPath: docker/code
+        - mountPath: /custom-cont-init.d
+          name: pinas-scripts
+          subPath: docker/code/custom-cont-init.d          
         - mountPath: /config/workspace/rancher
           name: pinas-scripts
           subPath: docker/ranchersetup  
