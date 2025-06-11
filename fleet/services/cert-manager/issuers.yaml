@@ -30,6 +30,7 @@ spec:
             apiTokenSecretRef:
               name: cloudflare-token-secret
               key: cloudflare-token
+            zoneID: "b61fff41621defbffa011e4ecb0507cb"  
         selector:
           dnsZones:
             - "coparentcare.com"
