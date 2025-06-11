@@ -71,7 +71,10 @@ subFolderOptions:
           - name: nginx
           - name: databases/xchat-db
       
-      # pihole removed from Fleet management - now deployed directly via setup.sh
+      mosquitto:
+        order: 30
+        dependsOn:
+          - name: common
       
       ha-proxy:
         order: 40
