@@ -19,6 +19,7 @@ spec:
             apiTokenSecretRef:
               name: cloudflare-token-secret
               key: cloudflare-token
+            zoneID: "829321251e07c4dd078637aaef91f494"    
         selector:
           dnsZones:
             - "mynetapp.site"
