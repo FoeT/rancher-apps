@@ -45,6 +45,7 @@ spec:
             apt-get update
             apt-get install -y npm
             npm install -g @anthropic-ai/claude-code
+            npm install -g @google/gemini-cli
             pip3 install -r requirements.txt
             /bin/bash
         workingDir: /var/www/exchat     
