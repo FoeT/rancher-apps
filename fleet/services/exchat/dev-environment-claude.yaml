@@ -57,7 +57,7 @@ spec:
               
               # Configure SSH
               mkdir /var/run/sshd
-              echo 'root:YourSecurePassword' | chpasswd # <-- IMPORTANT: Change this password!
+              echo 'root:j7jwu12h' | chpasswd # <-- IMPORTANT: Change this password!
               sed -i 's/#PermitRootLogin prohibit-password/PermitRootLogin yes/' /etc/ssh/sshd_config
               
               # Start the SSH daemon in the background
