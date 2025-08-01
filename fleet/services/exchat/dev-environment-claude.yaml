@@ -28,6 +28,9 @@ spec:
         - containerPort: 8000
           name: exchat-dev-port
           protocol: TCP
+        - containerPort: 22   # The new SSH port
+          name: ssh
+          protocol: TCP          
         volumeMounts:
         - mountPath: /var/www/exchat
           name: pinas-root
@@ -42,12 +45,27 @@ spec:
           - /bin/sh
           - -c
           - |
-            apt-get update
-            apt-get install -y npm
-            npm install -g @anthropic-ai/claude-code
-            npm install -g @google/gemini-cli
-            pip3 install -r requirements.txt
-            /bin/bash
+              # Install dependencies including SSH server
+              apt-get update
+              apt-get install -y openssh-server
+              
+              # Your original dependencies
+              apt-get install -y npm
+              npm install -g @anthropic-ai/claude-code
+              npm install -g @google/gemini-cli
+              pip3 install -r requirements.txt
+              
+              # Configure SSH
+              mkdir /var/run/sshd
+              echo 'root:YourSecurePassword' | chpasswd # <-- IMPORTANT: Change this password!
+              sed -i 's/#PermitRootLogin prohibit-password/PermitRootLogin yes/' /etc/ssh/sshd_config
+              
+              # Start the SSH daemon in the background
+              /usr/sbin/sshd &
+              
+              # Keep the container running (e.g., by starting your app)
+              # If your app doesn't run forever, use "tail -f /dev/null" to keep the container alive
+              /bin/bash
         workingDir: /var/www/exchat     
       imagePullSecrets:
       - name: github-container-registry
@@ -61,3 +79,20 @@ spec:
           defaultMode: 420
           optional: false
           secretName: exchat-secrets
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: exchat-dev-claude-ssh
+  namespace: weapps
+spec:
+  # This tells MetalLB to assign an external IP
+  type: LoadBalancer 
+  # This selector must match the labels on your pod template
+  selector:
+    app: exchat-dev-claude
+  ports:
+    - name: ssh
+      protocol: TCP
+      port: 22 # The port you will connect to from outside the cluster
+      targetPort: 22 # The port the container is listening on (from the Deployment)          

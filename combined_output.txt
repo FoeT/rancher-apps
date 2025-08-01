@@ -1,0 +1,3625 @@
+### DIRECTORY STRUCTURE ###
+.
+├── CERTIFICATE-GUIDE.md
+├── coparentcare.conf
+├── fix-nginx-config.sh
+├── fleet
+│   ├── base
+│   │   ├── fleet.yaml
+│   │   ├── persistent-volumes.yaml
+│   │   └── secrets.yaml
+│   ├── fleet.yaml
+│   ├── README.md
+│   └── services
+│       ├── cert-manager
+│       │   ├── certificates.yaml
+│       │   ├── fleet.yaml
+│       │   └── issuers.yaml
+│       ├── code-server
+│       │   ├── deployment.yaml
+│       │   └── fleet.yaml
+│       ├── common
+│       │   └── fleet.yaml
+│       ├── coparentcare
+│       │   ├── deployment.yaml
+│       │   └── fleet.yaml
+│       ├── databases
+│       │   ├── fleet.yaml
+│       │   ├── foretold-db
+│       │   │   ├── deployment.yaml
+│       │   │   └── fleet.yaml
+│       │   ├── mm-db
+│       │   │   ├── deployment.yaml
+│       │   │   └── fleet.yaml
+│       │   └── xchat-db
+│       │       ├── deployment.yaml
+│       │       └── fleet.yaml
+│       ├── exchat
+│       │   ├── deployment.yaml
+│       │   ├── dev-environment-claude.yaml
+│       │   ├── dev-environment.yaml
+│       │   └── fleet.yaml
+│       ├── foretold
+│       │   ├── deployment.yaml
+│       │   └── fleet.yaml
+│       ├── ha-proxy
+│       │   ├── deployment.yaml
+│       │   └── fleet.yaml
+│       ├── mmeraki
+│       │   ├── deployment.yaml
+│       │   └── fleet.yaml
+│       ├── mosquitto
+│       │   ├── deployment.yaml
+│       │   └── fleet.yaml
+│       ├── nextcloud
+│       │   ├── deployment.yaml
+│       │   └── fleet.yaml
+│       ├── nginx
+│       │   ├── deployment.yaml
+│       │   ├── fleet.yaml
+│       │   └── maintenance.html
+│       ├── pihole
+│       │   └── README.md
+│       └── traefik-config
+│           ├── fleet.yaml
+│           ├── ingressclass.yaml
+│           └── middlewares.yaml
+├── fleet-repo.sh
+├── gitrepo-chart
+│   ├── Chart.yaml
+│   └── templates
+│       └── gitrepo.yaml
+├── gitrepo-values.yaml
+├── index.html
+├── install.sh
+├── new_git_pull.sh
+├── pihole-dns.json
+├── README.md
+├── reclaim_volume.sh
+├── renew-certificates.sh
+├── setup-coparentcare.sh
+├── setup.sh
+├── static
+│   ├── pihole
+│   │   ├── deployment.yaml
+│   │   └── fleet.yaml
+│   └── README.md
+├── update-repo.sh
+├── volumes
+│   └── pinas-pv.sh
+└── weapps.json
+
+26 directories, 63 files
+
+
+### FILE CONTENTS ###
+
+========================================
+### File: ./coparentcare.conf
+========================================
+server {
+    listen 80;
+    server_name www.coparentcare.com coparentcare.com;
+
+    access_log /var/log/nginx/coparentcare.access.log;
+    error_log /var/log/nginx/coparentcare.error.log;
+
+    # Root directory for the website
+    root /var/www/html/coparentcare;
+    index index.html index.htm;
+
+    # Enable gzip compression
+    gzip on;
+    gzip_types text/plain text/css application/json application/javascript text/xml application/xml application/xml+rss text/javascript;
+
+    # Forward real IP
+    real_ip_header X-Forwarded-For;
+    set_real_ip_from 0.0.0.0/0;
+
+    # Default location block
+    location / {
+        try_files $uri $uri/ /index.html;
+        add_header Cache-Control "public, max-age=3600";
+    }
+
+    # Static assets with longer cache
+    location ~* \.(jpg|jpeg|png|gif|ico|css|js)$ {
+        expires 7d;
+    }
+
+    # Do not log favicon.ico requests
+    location = /favicon.ico {
+        log_not_found off;
+        access_log off;
+    }
+
+    # Do not log robots.txt requests
+    location = /robots.txt {
+        allow all;
+        log_not_found off;
+        access_log off;
+    }
+}
+========================================
+### File: ./index.html
+========================================
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Co-Parent Care</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            color: #333;
+        }
+        h1 {
+            color: #0078D7;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .container {
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            padding: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .coming-soon {
+            text-align: center;
+            font-size: 1.2em;
+            margin: 30px 0;
+            color: #555;
+        }
+    </style>
+</head>
+<body>
+    <h1>Co-Parent Care</h1>
+    
+    <div class="container">
+        <h2>Welcome to Co-Parent Care</h2>
+        <p>
+            Co-Parent Care is a platform designed to help parents coordinate care for their children
+            efficiently and effectively, especially when managing shared custody arrangements.
+        </p>
+        
+        <div class="coming-soon">
+            <p><strong>Website coming soon!</strong></p>
+            <p>We're working hard to bring you tools that make co-parenting easier.</p>
+        </div>
+        
+        <h3>Our Mission</h3>
+        <p>
+            Our mission is to reduce stress and improve communication between co-parents,
+            ultimately creating a more positive environment for children.
+        </p>
+    </div>
+</body>
+</html>
+========================================
+### File: ./volumes/pinas-pv.sh
+========================================
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  annotations:
+    pv.kubernetes.io/bound-by-controller: "yes"
+  creationTimestamp: "2025-03-04T06:23:43Z"
+  finalizers:
+  - kubernetes.io/pv-protection
+  name: pinas
+  resourceVersion: "38964400"
+  uid: dd23ab46-9d98-4056-92bb-269813e5ce56
+spec:
+  accessModes:
+  - ReadWriteOnce
+  - ReadWriteMany
+  - ReadOnlyMany
+  capacity:
+    storage: 50Gi
+  claimRef:
+    apiVersion: v1
+    kind: PersistentVolumeClaim
+    name: pinas-root
+    namespace: weapps
+    resourceVersion: "38964396"
+    uid: d6d4072c-0188-4447-ab17-55fb5561eabf
+  nfs:
+    path: /media/zfs-nas-1
+    server: 172.16.0.10
+  nodeAffinity:
+    required:
+      nodeSelectorTerms:
+      - {}
+  persistentVolumeReclaimPolicy: Retain
+  volumeMode: Filesystem
+status:
+  lastPhaseTransitionTime: "2025-03-04T06:24:07Z"
+  phase: Bound
+
+========================================
+### File: ./setup-coparentcare.sh
+========================================
+#!/bin/bash
+
+# This script sets up the necessary files for coparentcare.com
+
+echo "===== Setting up Co-Parent Care website ====="
+
+# 1. Create required directories
+echo "Creating directories..."
+mkdir -p /home/foe/scripts/git/nginx/conf.d
+mkdir -p /home/foe/docker/nextcloud/files/coparentcare
+
+# 2. Copy nginx config file
+echo "Copying nginx configuration..."
+cp coparentcare.conf /home/foe/scripts/git/nginx/conf.d/
+
+# 3. Copy index.html to the website root
+echo "Setting up placeholder web content..."
+cp index.html /home/foe/docker/nextcloud/files/coparentcare/
+
+# 4. Set permissions
+echo "Setting permissions..."
+chmod -R 755 /home/foe/docker/nextcloud/files/coparentcare
+chown -R 1000:1000 /home/foe/docker/nextcloud/files/coparentcare
+chown -R 1000:1000 /home/foe/scripts/git/nginx/conf.d/coparentcare.conf
+
+# 5. Restart nginx pod to apply changes
+echo "Restarting nginx pod..."
+kubectl rollout restart deployment nginx-workload-deployment -n weapps
+
+echo "===== Setup Complete ====="
+echo "The Co-Parent Care website should now be accessible at:"
+echo "  https://www.coparentcare.com"
+echo ""
+echo "Please note it may take a few minutes for the changes to take effect."
+========================================
+### File: ./CERTIFICATE-GUIDE.md
+========================================
+# TLS Certificate Management Guide
+
+This document provides detailed instructions for managing TLS certificates in the Rancher Apps deployment.
+
+## Quick Fix for Expired Certificates
+
+If you have expired certificates (like for exchat.mynetapp.site):
+
+```bash
+# 1. First, update the Cloudflare API token (most common issue)
+./renew-certificates.sh update-token
+
+# 2. Then renew all certificates at once
+./renew-certificates.sh renew-all
+
+# 3. Or renew a specific certificate
+./renew-certificates.sh renew mynetapp-site
+```
+
+## Setting Up Cloudflare API Token (Step-by-Step)
+
+1. Log in to the Cloudflare dashboard at https://dash.cloudflare.com
+
+2. Navigate to **My Profile > API Tokens**
+
+3. Click **Create Token**
+
+4. Select one of these options:
+   - Use the template **"Edit zone DNS"**
+   - Or create a custom token with these specific permissions:
+     - **Zone > Zone > Read**
+     - **Zone > DNS > Edit**
+
+5. Set token scope to include ALL your domains:
+   - Under "Zone Resources", select **"Include > Specific zone"**
+   - Add each domain separately:
+     - mynetapp.site
+     - coparentcare.com
+     - (any other domains you need certificates for)
+
+6. Set a reasonable token TTL (e.g., 6 months or 1 year)
+
+7. Click **Continue to summary** then **Create Token**
+
+8. Copy your token immediately (it will only be shown once)
+
+9. Create the Kubernetes secret:
+   ```bash
+   kubectl create secret generic cloudflare-token-secret --namespace=cert-manager --from-literal=cloudflare-token="YOUR-ACTUAL-TOKEN"
+   ```
+
+10. Verify the token setup:
+    ```bash
+    ./renew-certificates.sh verify-token
+    ```
+
+## Troubleshooting Certificate Issues
+
+### 1. Certificate Won't Issue
+
+If a certificate is stuck in "not ready" state:
+
+```bash
+# Check certificate status
+kubectl get certificates -n weapps
+
+# Check specific certificate details
+kubectl describe certificate mynetapp-site -n weapps
+
+# Check challenges
+kubectl get challenges.acme.cert-manager.io -n weapps
+
+# Check challenge details
+kubectl describe challenges.acme.cert-manager.io [challenge-name] -n weapps
+```
+
+### 2. Common Certificate Problems and Solutions
+
+#### Invalid API Token
+```bash
+# Update the token
+./renew-certificates.sh update-token
+```
+
+#### DNS Validation Failures
+If DNS01 challenges consistently fail, you can edit the certificates.yaml file to use HTTP01 validation instead:
+
+```yaml
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: specific-domain-cert
+  namespace: weapps
+spec:
+  secretName: specific-domain-tls
+  issuerRef:
+    name: letsencrypt-production
+    kind: ClusterIssuer
+  commonName: "www.example.com"
+  dnsNames:
+  - "www.example.com"  # Note: HTTP-01 doesn't support wildcards
+```
+
+#### Rate Limiting
+If you encounter Let's Encrypt rate limits, temporarily switch to staging issuer:
+
+```bash
+# Edit certificates.yaml to use staging issuer
+# Change:
+# issuerRef:
+#   name: letsencrypt-production
+# To:
+# issuerRef:
+#   name: letsencrypt-staging
+```
+
+### 3. Renewals
+
+Certificates should auto-renew, but you can force renewal:
+
+```bash
+# Renew all certificates
+./renew-certificates.sh renew-all
+```
+
+## Specific Domain Configurations
+
+### mynetapp.site
+
+- Uses DNS-01 validation via Cloudflare
+- Wildcard certificate (*.mynetapp.site)
+- Covers: exchat.mynetapp.site, mm.mynetapp.site, etc.
+
+### coparentcare.com
+
+- Uses both DNS-01 (for wildcard) and HTTP-01 (for www only)
+- Main certificate secretName: coparentcare-com-tls
+- Specific www cert secretName: www-coparentcare-com-tls
+
+## Checking Certificate Expiry
+
+To check when certificates expire:
+
+```bash
+# Get certificate secrets
+kubectl get secrets -n weapps | grep tls
+
+# Check a specific certificate's expiry
+kubectl get secret mynetapp-site-production-tls -n weapps -o jsonpath='{.data.tls\.crt}' | base64 -d | openssl x509 -noout -dates
+```
+========================================
+### File: ./gitrepo-chart/Chart.yaml
+========================================
+apiVersion: v2
+name: gitrepo
+description: Fleet GitRepo Chart
+type: application
+version: 0.1.0
+appVersion: "1.0.0"
+
+========================================
+### File: ./gitrepo-chart/templates/gitrepo.yaml
+========================================
+apiVersion: fleet.cattle.io/v1alpha1
+kind: GitRepo
+metadata:
+  name: rancher-apps
+  namespace: fleet-local
+spec:
+  repo: https://github.com/FoeT/rancher-apps
+  branch: main
+  paths:
+  - .
+  helmRepoURLRegex: "https://charts.*"
+  clientSecretName: foet-git
+  forceSyncGeneration: 0
+  correctDrift:
+    enabled: true
+  targets:
+  - clusterName: local
+
+========================================
+### File: ./weapps.json
+========================================
+{
+    "apiVersion": "v1",
+    "kind": "Namespace",
+    "metadata": {
+        "annotations": {
+            "cattle.io/status": "{\"Conditions\":[{\"Type\":\"ResourceQuotaInit\",\"Status\":\"True\",\"Message\":\"\",\"LastUpdateTime\":\"2025-03-04T06:51:30Z\"},{\"Type\":\"InitialRolesPopulated\",\"Status\":\"True\",\"Message\":\"\",\"LastUpdateTime\":\"2025-03-04T06:51:30Z\"}]}",
+            "lifecycle.cattle.io/create.namespace-auth": "true",
+            "meta.helm.sh/release-name": "rancher-apps-services-common",
+            "meta.helm.sh/release-namespace": "weapps",
+            "objectset.rio.cattle.io/id": "default-rancher-apps-services-common-cattle-fleet-local-system"
+        },
+        "creationTimestamp": "2025-03-04T06:51:29Z",
+        "deletionTimestamp": "2025-03-04T21:55:49Z",
+        "labels": {
+            "app.kubernetes.io/managed-by": "Helm",
+            "kubernetes.io/metadata.name": "weapps",
+            "name": "weapps",
+            "objectset.rio.cattle.io/hash": "18cdefd9859e67ebe086c699b1fa4c5a50baddd0"
+        },
+        "name": "weapps",
+        "resourceVersion": "39284800",
+        "uid": "dc260434-7324-4e2a-b4cd-6a3ccc5683a8"
+    },
+    "spec": {
+        "finalizers": []
+    },
+    "status": {
+        "conditions": [
+            {
+                "lastTransitionTime": "2025-03-04T21:56:01Z",
+                "message": "All resources successfully discovered",
+                "reason": "ResourcesDiscovered",
+                "status": "False",
+                "type": "NamespaceDeletionDiscoveryFailure"
+            },
+            {
+                "lastTransitionTime": "2025-03-04T21:56:01Z",
+                "message": "All legacy kube types successfully parsed",
+                "reason": "ParsedGroupVersions",
+                "status": "False",
+                "type": "NamespaceDeletionGroupVersionParsingFailure"
+            },
+            {
+                "lastTransitionTime": "2025-03-04T21:56:01Z",
+                "message": "All content successfully deleted, may be waiting on finalization",
+                "reason": "ContentDeleted",
+                "status": "False",
+                "type": "NamespaceDeletionContentFailure"
+            },
+            {
+                "lastTransitionTime": "2025-03-04T21:56:01Z",
+                "message": "Some resources are remaining: services. has 1 resource instances",
+                "reason": "SomeResourcesRemain",
+                "status": "True",
+                "type": "NamespaceContentRemaining"
+            },
+            {
+                "lastTransitionTime": "2025-03-04T21:56:01Z",
+                "message": "Some content in the namespace has finalizers remaining: service.kubernetes.io/load-balancer-cleanup in 1 resource instances",
+                "reason": "SomeFinalizersRemain",
+                "status": "True",
+                "type": "NamespaceFinalizersRemaining"
+            }
+        ],
+        "phase": "Terminating"
+    }
+}
+
+========================================
+### File: ./renew-certificates.sh
+========================================
+#!/bin/bash
+
+# Certificate Renewal Script
+echo "===== TLS Certificate Renewal Tool ====="
+
+# Check if arguments are provided
+if [ $# -eq 0 ]; then
+  # No arguments, show all certificates
+  echo "Checking all TLS certificates..."
+  kubectl get certificates -n weapps
+  echo ""
+  echo "Usage:"
+  echo "  $0 list                 - List all certificates and their status"
+  echo "  $0 renew <cert-name>    - Renew a specific certificate"
+  echo "  $0 renew-all            - Renew all certificates"
+  echo "  $0 check <cert-name>    - Check details of a specific certificate"
+  echo "  $0 verify-token         - Verify Cloudflare API token permissions"
+  echo "  $0 update-token         - Update the Cloudflare API token"
+  echo ""
+  exit 0
+fi
+
+case "$1" in
+  list)
+    echo "Listing all TLS certificates:"
+    echo "----------------------------"
+    kubectl get certificates -n weapps
+    echo ""
+    kubectl get secrets -n weapps | grep tls
+    ;;
+    
+  renew)
+    if [ -z "$2" ]; then
+      echo "Error: Certificate name required"
+      echo "Usage: $0 renew <certificate-name>"
+      exit 1
+    fi
+    
+    echo "Renewing certificate: $2"
+    echo "------------------------"
+    echo "1. Deleting existing certificate..."
+    kubectl delete certificate "$2" -n weapps
+    
+    echo "2. Reapplying certificate definition..."
+    kubectl apply -f fleet/services/cert-manager/certificates.yaml
+    
+    echo "3. Checking certificate status..."
+    sleep 5
+    kubectl get certificate "$2" -n weapps
+    ;;
+    
+  renew-all)
+    echo "Renewing ALL certificates"
+    echo "-----------------------"
+    echo "1. Backing up current certificates..."
+    kubectl get certificates -n weapps -o yaml > cert-backup-$(date +%Y%m%d%H%M%S).yaml
+    
+    echo "2. Deleting all certificates..."
+    kubectl delete certificates --all -n weapps
+    
+    echo "3. Reapplying certificate definitions..."
+    kubectl apply -f fleet/services/cert-manager/certificates.yaml
+    
+    echo "4. Checking certificate status..."
+    sleep 5
+    kubectl get certificates -n weapps
+    ;;
+    
+  check)
+    if [ -z "$2" ]; then
+      echo "Error: Certificate name required"
+      echo "Usage: $0 check <certificate-name>"
+      exit 1
+    fi
+    
+    echo "Checking certificate: $2"
+    echo "----------------------"
+    kubectl describe certificate "$2" -n weapps
+    
+    # Get CertificateRequest name
+    CR_NAME=$(kubectl get certificaterequest -n weapps | grep "$2" | awk '{print $1}' | head -1)
+    
+    if [ -n "$CR_NAME" ]; then
+      echo ""
+      echo "Certificate Request details:"
+      echo "--------------------------"
+      kubectl describe certificaterequest "$CR_NAME" -n weapps
+      
+      # Check for challenges
+      CHALLENGE=$(kubectl get challenges.acme.cert-manager.io -n weapps | grep "$CR_NAME" | awk '{print $1}' | head -1)
+      
+      if [ -n "$CHALLENGE" ]; then
+        echo ""
+        echo "Challenge details:"
+        echo "----------------"
+        kubectl describe challenges.acme.cert-manager.io "$CHALLENGE" -n weapps
+      fi
+    fi
+    ;;
+    
+  verify-token)
+    echo "Verifying Cloudflare API token"
+    echo "----------------------------"
+    echo "1. Checking if token secret exists..."
+    if kubectl get secret cloudflare-token-secret -n cert-manager &>/dev/null; then
+      echo "✅ Token secret exists in cert-manager namespace"
+      
+      echo "2. Checking issuers configuration..."
+      PROD_ISSUER=$(kubectl get clusterissuer letsencrypt-production -o jsonpath='{.status.conditions[0].status}')
+      STAGING_ISSUER=$(kubectl get clusterissuer letsencrypt-staging -o jsonpath='{.status.conditions[0].status}')
+      
+      if [ "$PROD_ISSUER" == "True" ]; then
+        echo "✅ Production issuer is ready"
+      else
+        echo "❌ Production issuer is not ready"
+        kubectl describe clusterissuer letsencrypt-production
+      fi
+      
+      if [ "$STAGING_ISSUER" == "True" ]; then
+        echo "✅ Staging issuer is ready"
+      else
+        echo "❌ Staging issuer is not ready"
+        kubectl describe clusterissuer letsencrypt-staging
+      fi
+      
+      echo ""
+      echo "NOTE: If issuers are not ready, the Cloudflare token may not have correct permissions."
+      echo "You should create a new token with Zone.Zone:Read and Zone.DNS:Edit permissions"
+      echo "for ALL required domains (mynetapp.site, coparentcare.com, etc.)"
+    else
+      echo "❌ Cloudflare token secret not found!"
+      echo "Create it with:"
+      echo 'kubectl create secret generic cloudflare-token-secret --namespace=cert-manager --from-literal=cloudflare-token="YOUR-ACTUAL-TOKEN"'
+    fi
+    ;;
+    
+  update-token)
+    echo "Updating Cloudflare API token"
+    echo "--------------------------"
+    echo "Enter your new Cloudflare API token:"
+    read -s CF_TOKEN
+    
+    if [ -z "$CF_TOKEN" ]; then
+      echo "Error: Token cannot be empty"
+      exit 1
+    fi
+    
+    echo "1. Deleting existing token secret..."
+    kubectl delete secret cloudflare-token-secret -n cert-manager
+    
+    echo "2. Creating new token secret..."
+    kubectl create secret generic cloudflare-token-secret --namespace=cert-manager --from-literal=cloudflare-token="$CF_TOKEN"
+    
+    echo "3. Reloading cert-manager..."
+    kubectl rollout restart deployment -n cert-manager
+    
+    echo "4. Waiting for cert-manager to restart..."
+    kubectl rollout status deployment cert-manager -n cert-manager
+    
+    echo "5. Verifying token configuration..."
+    sleep 5
+    "$0" verify-token
+    ;;
+    
+  *)
+    echo "Unknown command: $1"
+    echo "Usage:"
+    echo "  $0 list                 - List all certificates and their status"
+    echo "  $0 renew <cert-name>    - Renew a specific certificate"
+    echo "  $0 renew-all            - Renew all certificates"
+    echo "  $0 check <cert-name>    - Check details of a specific certificate"
+    echo "  $0 verify-token         - Verify Cloudflare API token permissions"
+    echo "  $0 update-token         - Update the Cloudflare API token"
+    ;;
+esac
+========================================
+### File: ./pihole-dns.json
+========================================
+{
+    "apiVersion": "v1",
+    "kind": "Service",
+    "metadata": {
+        "annotations": {
+            "field.cattle.io/publicEndpoints": "[{\"addresses\":[\"172.16.0.95\"],\"port\":8080,\"protocol\":\"TCP\",\"serviceName\":\"weapps:pihole-dns\",\"allNodes\":false},{\"addresses\":[\"172.16.0.95\"],\"port\":53,\"protocol\":\"TCP\",\"serviceName\":\"weapps:pihole-dns\",\"allNodes\":false},{\"addresses\":[\"172.16.0.95\"],\"port\":53,\"protocol\":\"UDP\",\"serviceName\":\"weapps:pihole-dns\",\"allNodes\":false}]",
+            "meta.helm.sh/release-name": "rancher-apps-services-pihole",
+            "meta.helm.sh/release-namespace": "weapps",
+            "metallb.universe.tf/allow-shared-ip": "true",
+            "metallb.universe.tf/ip-allocated-from-pool": "my-pool",
+            "metallb.universe.tf/loadBalancerIPs": "172.16.0.95",
+            "objectset.rio.cattle.io/id": "default-rancher-apps-services-pihole-cattle-fleet-local-system"
+        },
+        "creationTimestamp": "2025-03-04T06:52:00Z",
+        "deletionGracePeriodSeconds": 0,
+        "deletionTimestamp": "2025-03-04T21:55:50Z",
+        "finalizers": [],
+        "labels": {
+            "app.kubernetes.io/managed-by": "Helm",
+            "objectset.rio.cattle.io/hash": "cb4977d1366c1540ee977ce30bf01ad3009b0387"
+        },
+        "name": "pihole-dns",
+        "namespace": "weapps",
+        "resourceVersion": "39283865",
+        "uid": "77060470-1015-49d4-b0f6-e15940a4eca5"
+    },
+    "spec": {
+        "allocateLoadBalancerNodePorts": true,
+        "clusterIP": "10.43.241.122",
+        "clusterIPs": [
+            "10.43.241.122"
+        ],
+        "externalTrafficPolicy": "Local",
+        "healthCheckNodePort": 31999,
+        "internalTrafficPolicy": "Local",
+        "ipFamilies": [
+            "IPv4"
+        ],
+        "ipFamilyPolicy": "SingleStack",
+        "ports": [
+            {
+                "name": "dns-web",
+                "nodePort": 30122,
+                "port": 8080,
+                "protocol": "TCP",
+                "targetPort": 80
+            },
+            {
+                "name": "dns-tcp",
+                "nodePort": 31359,
+                "port": 53,
+                "protocol": "TCP",
+                "targetPort": 53
+            },
+            {
+                "name": "dns-udp",
+                "nodePort": 31359,
+                "port": 53,
+                "protocol": "UDP",
+                "targetPort": 53
+            }
+        ],
+        "selector": {
+            "app": "pihole"
+        },
+        "sessionAffinity": "None",
+        "type": "LoadBalancer"
+    },
+    "status": {
+        "loadBalancer": {
+            "ingress": [
+                {
+                    "ip": "172.16.0.95",
+                    "ipMode": "VIP"
+                }
+            ]
+        }
+    }
+}
+
+========================================
+### File: ./README.md
+========================================
+# Rancher Fleet Applications
+
+This repository contains organized YAML configurations for deploying applications using Fleet in Rancher, along with static workloads deployed directly.
+
+## Quick Start
+
+To deploy these applications:
+
+1. Clone this repository
+2. Create a GitHub read-only token (Personal Access Token):
+   - Go to GitHub → Settings → Developer Settings → Personal Access Tokens → Fine-grained tokens
+   - Create a token with read-only access to your repositories (packages read permission is also needed for container registry access)
+   - Store the token in a Kubernetes secret (recommended):
+     ```bash
+     kubectl create secret generic github-readonly-token -n fleet-local --from-literal=token=YOUR_TOKEN
+     ```
+   - This token will be used for:
+     - Git repository access
+     - GitHub Container Registry access for all deployments 
+     - Fleet GitRepo image pulls
+3. Run the setup script to initialize resources and deploy static workloads:
+   ```bash
+   ./setup.sh
+   ```
+4. Apply the Fleet GitRepo configuration to deploy Fleet-managed workloads:
+   ```bash
+   ./fleet-repo.sh
+   ```
+
+## Managing the Repository
+
+## Important Notes
+
+### Bundle Naming Convention
+
+Fleet automatically prefixes bundles with the GitRepo name. For this repository, bundles will be named:
+- `rancher-apps-fleet-` (main bundle)
+- `rancher-apps-fleet-services-cert-manager` (cert-manager bundle)
+- `rancher-apps-fleet-services-common` (common services bundle)
+- etc.
+
+When using `dependsOn` in your fleet.yaml files, always use the full bundle name including this prefix. For example:
+```yaml
+dependsOn:
+  - name: rancher-apps-fleet-services-cert-manager
+```
+
+### Updating and Pushing Changes
+
+Use the included update script for pushing changes to the repository:
+
+```bash
+# Make your changes, then run:
+./update-repo.sh -m "Your commit message" -p
+
+# Or without arguments for interactive prompts:
+./update-repo.sh
+```
+
+### Pulling Updates
+
+To pull the latest changes from the repository and automatically update deployments:
+
+```bash
+./new_git_pull.sh
+```
+
+This script:
+1. Uses a read-only GitHub token for secure access
+2. Pulls the latest changes from the repository
+3. Updates the GitHub container registry secret
+4. Applies any changes to static workloads
+
+The script uses the GitHub token from the Kubernetes secret named `github-readonly-token` in the `fleet-local` namespace. This same token is used for:
+- Git repository access
+- GitHub Container Registry authentication
+- Updating the Kubernetes secret used by container deployments
+
+## Directory Structure
+
+```
+/
+├── fleet/                        # Fleet-managed workloads
+│   ├── base/                     # Shared configurations
+│   │   ├── fleet.yaml            # Base Fleet config
+│   │   ├── persistent-volumes.yaml # PVC definitions
+│   │   └── secrets.yaml          # Secret templates
+│   │
+│   ├── services/                 # Application configurations
+│   │   ├── cert-manager/         # TLS certificate management
+│   │   │   ├── certificates.yaml
+│   │   │   ├── fleet.yaml
+│   │   │   └── issuers.yaml
+│   │   │
+│   │   ├── common/               # Common resources
+│   │   │   ├── fleet.yaml
+│   │   │   └── namespace.yaml
+│   │   │
+│   │   ├── databases/            # Database services (start first)
+│   │   │   ├── fleet.yaml        # Databases parent config
+│   │   │   ├── xchat-db/         # ExChat database
+│   │   │   │   ├── deployment.yaml
+│   │   │   │   └── fleet.yaml
+│   │   │   ├── foretold-db/      # Foretold database
+│   │   │   │   ├── deployment.yaml
+│   │   │   │   └── fleet.yaml
+│   │   │   └── mm-db/            # MM database
+│   │   │       ├── deployment.yaml
+│   │   │       └── fleet.yaml
+│   │   │
+│   │   ├── coparentcare/         # Coparentcare application
+│   │   │   ├── deployment.yaml
+│   │   │   └── fleet.yaml
+│   │   │
+│   │   ├── code-server/          # Code Server IDE
+│   │   │   ├── deployment.yaml
+│   │   │   └── fleet.yaml
+│   │   │
+│   │   ├── exchat/               # Exchat application
+│   │   │   ├── deployment.yaml
+│   │   │   ├── dev-environment.yaml
+│   │   │   └── fleet.yaml
+│   │   │
+│   │   ├── ha-proxy/             # Home Assistant proxy
+│   │   │   ├── deployment.yaml
+│   │   │   └── fleet.yaml
+│   │   │
+│   │   ├── nextcloud/            # Nextcloud
+│   │   │   ├── deployment.yaml
+│   │   │   └── fleet.yaml
+│   │   │
+│   │   ├── nginx/                # NGINX web server
+│   │   │   ├── deployment.yaml
+│   │   │   └── fleet.yaml
+│   │   │
+│   │   └── traefik-config/       # Traefik configuration (for existing instance)
+│   │       ├── fleet.yaml
+│   │       ├── ingressclass.yaml
+│   │       └── middlewares.yaml
+│   │
+│   └── fleet.yaml                # Main Fleet configuration
+│
+├── static/                       # Directly deployed workloads (not Fleet-managed)
+│   ├── pihole/                   # Pi-hole DNS service
+│   │   └── deployment.yaml
+│   └── README.md                 # Documentation for static workloads
+│
+├── setup.sh                      # Setup script to deploy static workloads
+└── fleet-repo.sh                 # Script to register Fleet GitRepo
+```
+
+## Deployment Order
+
+The applications deploy in the following order:
+
+1. Core infrastructure:
+   - cert-manager (TLS certificate management)
+
+2. Common resources and configuration:
+   - Common namespace and resources
+   - Traefik configuration (updates for existing K3s Traefik)
+
+3. Databases (ensure they start first):
+   - xchat-db (ExChat database)
+   - mm-db (MM database)
+   - foretold-db (Foretold database)
+
+4. Application services:
+   - NGINX (Web server)
+   - Code Server
+   - Nextcloud
+   - ExChat (Social application)
+   - Home Assistant Proxy
+   - Coparentcare
+
+5. Static (Direct) Deployments:
+   - Pi-hole (DNS server) - deployed via setup.sh
+
+## Usage
+
+To deploy these applications using Fleet:
+
+1. Add this repository to your Fleet GitRepo
+2. Adjust configuration as needed for your environment
+3. Commit and push changes to trigger deployment
+
+## Configuration Notes
+
+- All applications deploy to the `weapps` namespace
+- Ingress resources use the `traefik` IngressClass (from K3s)
+- TLS certificates use `cert-manager` with LetsEncrypt
+- Most applications mount files from the `pinas-root` persistent volume
+- Uses the existing Traefik instance in K3s (kube-system namespace)
+
+## Certificate Management
+
+TLS certificates are managed using cert-manager with Cloudflare DNS validation. This requires:
+
+1. A valid Cloudflare API token with:
+   - Zone.Zone: Read permissions
+   - Zone.DNS: Edit permissions
+   - Access to all domains (mynetapp.site, coparentcare.com, etc.)
+
+2. The token stored as a Kubernetes secret:
+   ```bash
+   kubectl create secret generic cloudflare-token-secret --namespace=cert-manager --from-literal=cloudflare-token="your-cloudflare-api-token"
+   ```
+
+3. Proper DNS setup in Cloudflare for all domains
+
+### Certificate Management Scripts
+
+A dedicated script is provided for certificate management:
+
+```bash
+# List all certificates and their status
+./renew-certificates.sh list
+
+# Renew a specific certificate
+./renew-certificates.sh renew mynetapp-site
+
+# Renew all certificates (useful for expired certs)
+./renew-certificates.sh renew-all
+
+# Check certificate details and troubleshoot issues
+./renew-certificates.sh check coparentcare-com
+
+# Verify Cloudflare API token permissions
+./renew-certificates.sh verify-token
+
+# Update the Cloudflare API token
+./renew-certificates.sh update-token
+```
+
+**Important**: If certificates are expired or failing to issue, the most common cause is an invalid or expired Cloudflare API token. Use the script to verify and update your token.
+
+## Domain Configuration
+
+- Primary domain: mynetapp.site
+- Additional domain: coparentcare.com
+- DNS managed through Cloudflare
+========================================
+### File: ./static/README.md
+========================================
+# Static Workloads
+
+This directory contains workloads that are deployed directly via kubectl and not managed by Fleet.
+These workloads are deployed by the `setup.sh` script.
+
+## Current Static Workloads:
+
+- **PiHole**: DNS-based ad blocker with a fixed LoadBalancer IP (172.16.0.95)
+  - Uses persistent storage via pinas-root PVC
+  - Deployed with a fixed IP to avoid conflicts with Fleet management
+
+## Why are these workloads static?
+
+Some workloads may have specific requirements that make them difficult to manage through Fleet:
+
+1. Fixed IP addresses that might cause conflicts with Fleet's reconciliation
+2. Specialized persistence requirements
+3. Services that need to be carefully managed during updates
+
+Adding a workload to this directory means it will be deployed directly through kubectl
+rather than through Fleet's GitOps process.
+========================================
+### File: ./static/pihole/fleet.yaml
+========================================
+defaultNamespace: weapps
+namespace: weapps
+========================================
+### File: ./static/pihole/deployment.yaml
+========================================
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: pihole-config
+  namespace: weapps
+data:
+  TZ: "Australia/Brisbane"
+  DNSMASQ_USER: "root"
+  DNSMASQ_LISTENING: "all"
+  DNS1: "1.1.1.1"  # Added upstream DNS
+  DNS2: "8.8.8.8"  # Added backup DNS  
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: pihole-secret
+  namespace: weapps
+type: Opaque
+data:
+  # This is 'm@nual20' base64 encoded
+  WEBPASSWORD: bUBudWFsMjA=
+---
+# DNS Service on .95
+apiVersion: v1
+kind: Service
+metadata:
+  name: pihole-dns
+  namespace: weapps
+  annotations:
+    metallb.universe.tf/allow-shared-ip: "true"
+    metallb.universe.tf/loadBalancerIPs: "172.16.0.95"
+spec:
+  type: LoadBalancer  
+  externalTrafficPolicy: Local 
+  internalTrafficPolicy: Local
+  ports:
+    - port: 8080
+      targetPort: 80
+      protocol: TCP
+      name: dns-web  
+    - port: 53
+      targetPort: 53
+      protocol: TCP
+      name: dns-tcp
+    - port: 53
+      targetPort: 53
+      protocol: UDP
+      name: dns-udp
+  selector:
+    app: pihole
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: pihole
+  namespace: weapps
+spec:
+  selector:
+    matchLabels:
+      app: pihole
+  replicas: 1
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app: pihole
+    spec:
+      containers:
+        - name: pihole
+          image: pihole/pihole:latest
+          ports:
+            - containerPort: 80
+              name: http
+            - containerPort: 53
+              protocol: TCP
+              name: dns-tcp
+            - containerPort: 53
+              protocol: UDP
+              name: dns-udp
+          envFrom:
+            - configMapRef:
+                name: pihole-config
+            - secretRef:
+                name: pihole-secret
+          volumeMounts:
+            - name: pinas-root
+              mountPath: /etc/pihole
+              subPath: docker/pihole/files/etc
+            - name: pinas-root
+              mountPath: /etc/dnsmasq.d
+              subPath: docker/pihole/files/dns
+          securityContext:
+            capabilities:
+              add: ["NET_ADMIN"]
+      volumes:
+      - name: pinas-root
+        persistentVolumeClaim:
+          claimName: pinas-root        
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: pihole-ingress
+  namespace: weapps
+  annotations:
+    traefik.ingress.kubernetes.io/router.entrypoints: websecure
+    traefik.ingress.kubernetes.io/router.tls: "true"
+spec:
+  ingressClassName: traefik
+  rules:
+    - host: pihole.mynetapp.site
+      http:
+        paths:
+          - pathType: ImplementationSpecific
+            backend:
+              service:
+                name: pihole-dns
+                port:
+                  number: 8080
+  tls:
+    - hosts:
+        - pihole.mynetapp.site
+      secretName: mynetapp-site-production-tls
+
+========================================
+### File: ./fleet-repo.sh
+========================================
+#!/bin/bash
+
+# Try to get GitHub token from kubernetes secret
+if kubectl get secret -n fleet-local github-readonly-token &>/dev/null; then
+  echo "Getting GitHub token from Kubernetes secret..."
+  READ_ONLY_TOKEN=$(kubectl get secret -n fleet-local github-readonly-token -o jsonpath='{.data.token}' | base64 -d)
+  
+  # Create/update the github-container-registry secret for Fleet
+  echo "Updating GitHub container registry secret for Fleet deployments..."
+  kubectl create secret docker-registry github-container-registry \
+    --namespace weapps \
+    --docker-server=ghcr.io \
+    --docker-username=FoeT \
+    --docker-password=${READ_ONLY_TOKEN} \
+    --docker-email=forrest.thurgood@gmail.com \
+    --dry-run=client -o yaml | kubectl apply -f -
+else
+  echo "WARNING: GitHub token not found in Kubernetes secret."
+  echo "Some container images may not be accessible without a valid token."
+  echo "To create the token secret, run:"
+  echo "kubectl create secret generic github-readonly-token -n fleet-local --from-literal=token=YOUR_TOKEN"
+fi
+
+cat <<EOF | kubectl apply -f -
+apiVersion: fleet.cattle.io/v1alpha1
+kind: GitRepo
+metadata:
+  name: rancher-apps
+  namespace: fleet-local
+  annotations:
+    meta.helm.sh/release-name: rancher-apps
+    meta.helm.sh/release-namespace: weapps
+  labels:
+    app.kubernetes.io/managed-by: Helm
+spec:
+  repo: https://github.com/FoeT/rancher-apps
+  branch: main
+#  revision: 1eed8c5f8685818e2327c5d65d0a3cb12c5715fb
+  paths:
+  - fleet
+  helmRepoURLRegex: "https://charts.*"
+  clientSecretName: foet-git
+  forceSyncGeneration: 0
+  # Force resources to be adopted
+  correctDrift:
+    enabled: true
+  # Don't use a global targetNamespace to allow cluster-scoped resources
+  # Each component will set its own namespace as needed
+  targets:
+  - clusterName: local
+EOF
+
+========================================
+### File: ./gitrepo-values.yaml
+========================================
+apiVersion: fleet.cattle.io/v1alpha1
+kind: GitRepo
+metadata:
+  name: rancher-apps
+  namespace: fleet-local
+  labels:
+    app.kubernetes.io/managed-by: Helm
+  annotations:
+    meta.helm.sh/release-name: rancher-apps
+    meta.helm.sh/release-namespace: weapps
+spec:
+  repo: https://github.com/FoeT/rancher-apps
+  branch: main
+  paths:
+  - .
+  helmRepoURLRegex: "https://charts.*"
+  clientSecretName: foet-git
+  forceSyncGeneration: 0
+  correctDrift:
+    enabled: true
+  targets:
+  - clusterName: local
+
+========================================
+### File: ./update-repo.sh
+========================================
+#!/bin/bash
+
+# Script to update the rancher-apps git repository
+
+# Check if we're in the right directory
+if [ ! -d ".git" ]; then
+  echo "Error: This script must be run from the root of the rancher-apps repository"
+  exit 1
+fi
+
+# Parse arguments
+COMMIT_MESSAGE=""
+AUTO_PUSH=false
+
+while [[ $# -gt 0 ]]; do
+  case $1 in
+    -m|--message)
+      COMMIT_MESSAGE="$2"
+      shift 2
+      ;;
+    -p|--push)
+      AUTO_PUSH=true
+      shift
+      ;;
+    *)
+      echo "Unknown option: $1"
+      echo "Usage: $0 [-m|--message \"commit message\"] [-p|--push]"
+      exit 1
+      ;;
+  esac
+done
+
+# If no commit message was provided, prompt for one
+if [ -z "$COMMIT_MESSAGE" ]; then
+  read -p "Enter commit message: " COMMIT_MESSAGE
+  
+  if [ -z "$COMMIT_MESSAGE" ]; then
+    echo "Error: Commit message is required"
+    exit 1
+  fi
+fi
+
+echo "===== Updating Git Repository ====="
+
+# Show current status
+echo "Current git status:"
+git status --short
+
+# Add all changes
+echo -e "\nAdding all changes..."
+git add --all
+
+# Show what's being committed
+echo -e "\nChanges to be committed:"
+git status --short
+
+# Ask for confirmation
+read -p "Proceed with commit? [Y/n] " confirm
+confirm=${confirm:-Y}
+
+if [[ $confirm =~ ^[Yy] ]]; then
+  # Commit changes
+  echo -e "\nCommitting changes..."
+  git commit -m "$COMMIT_MESSAGE"
+  
+  # Push if requested
+  if [ "$AUTO_PUSH" = true ]; then
+    echo -e "\nPushing changes to remote repository..."
+    git push origin main
+  else
+    read -p "Push changes to remote repository? [Y/n] " push
+    push=${push:-Y}
+    
+    if [[ $push =~ ^[Yy] ]]; then
+      echo -e "\nPushing changes to remote repository..."
+      git push origin main
+    else
+      echo -e "\nChanges committed but not pushed. To push later, run: git push origin main"
+    fi
+  fi
+  
+  echo -e "\n===== Update Complete ====="
+else
+  echo -e "\nUpdate cancelled. No changes committed."
+  exit 0
+fi
+========================================
+### File: ./new_git_pull.sh
+========================================
+#!/bin/bash
+
+# Script to pull updates from the git repository using a read-only token
+# This token should have only read access to the repositories
+
+# Set variables
+GIT_DIR=$(pwd)
+GITHUB_USER="FoeT"
+GITHUB_EMAIL="forrest.thurgood@gmail.com"
+
+# Try to get token from kubernetes secret first
+if kubectl get secret -n fleet-local github-readonly-token &>/dev/null; then
+  echo "Getting GitHub token from Kubernetes secret..."
+  READ_ONLY_TOKEN=$(kubectl get secret -n fleet-local github-readonly-token -o jsonpath='{.data.token}' | base64 -d)
+else
+  # Fall back to hardcoded token (not recommended)
+  READ_ONLY_TOKEN="YOUR_READ_ONLY_TOKEN" # Replace with a GitHub read-only token
+fi
+
+REPO_URL="https://${GITHUB_USER}:${READ_ONLY_TOKEN}@github.com/FoeT/rancher-apps.git"
+
+# Check if the token has been set or retrieved
+if [[ "$READ_ONLY_TOKEN" == "YOUR_READ_ONLY_TOKEN" || -z "$READ_ONLY_TOKEN" ]]; then
+  echo "ERROR: GitHub read-only token not configured."
+  echo "Please follow these steps to create a read-only token:"
+  echo "  1. Go to GitHub → Settings → Developer Settings → Personal Access Tokens → Fine-grained tokens"
+  echo "  2. Click 'Generate new token'"
+  echo "  3. Give it a descriptive name (e.g., 'rancher-apps-readonly')"
+  echo "  4. Set expiration as needed"
+  echo "  5. Select your repository under 'Repository access'"
+  echo "  6. Under Permissions > Repository permissions, grant:"
+  echo "     - Contents: Read-only"
+  echo "     - Metadata: Read-only"
+  echo "  7. Click 'Generate token'"
+  echo "  8. You can either:"
+  echo "     a. Update the READ_ONLY_TOKEN variable in this script (less secure), or"
+  echo "     b. Store it in a Kubernetes secret (recommended):"
+  echo "        kubectl create secret generic github-readonly-token -n fleet-local --from-literal=token=YOUR_TOKEN"
+  echo ""
+  echo "After setting the token, run this script again."
+  exit 1
+fi
+
+# Print header
+echo "===== Git Pull Script ====="
+echo "Pulling latest changes from repository..."
+
+# Configure git if not already configured
+if [[ -z $(git config --get user.name) ]]; then
+  git config user.name "${GITHUB_USER}"
+fi
+if [[ -z $(git config --get user.email) ]]; then
+  git config user.email "${GITHUB_EMAIL}"
+fi
+
+# Fetch the latest changes
+git fetch origin main
+
+# Check if there are changes to pull
+LOCAL=$(git rev-parse HEAD)
+REMOTE=$(git rev-parse origin/main)
+
+if [ "$LOCAL" != "$REMOTE" ]; then
+  echo "New changes detected. Pulling updates..."
+  
+  # Save any local changes
+  if [ -n "$(git status --porcelain)" ]; then
+    echo "Stashing local changes..."
+    git stash
+  fi
+  
+  # Pull the changes
+  git pull origin main
+  
+  # Apply stashed changes if any
+  if [ -n "$(git stash list)" ]; then
+    echo "Applying stashed changes..."
+    git stash pop
+  fi
+  
+  echo "Repository updated successfully to commit: $(git rev-parse --short HEAD)"
+  
+  # Create the github-container-registry secret
+  echo "Updating GitHub container registry secret..."
+  kubectl create secret docker-registry github-container-registry \
+    --namespace weapps \
+    --docker-server=ghcr.io \
+    --docker-username=${GITHUB_USER} \
+    --docker-password=${READ_ONLY_TOKEN} \
+    --docker-email=${GITHUB_EMAIL} \
+    --dry-run=client -o yaml | kubectl apply -f -
+  
+  # Apply static workloads
+  echo "Applying updated static workloads..."
+  if [ -f "./setup.sh" ]; then
+    # Only run the static workloads part
+    echo "- Deploying PiHole..."
+    kubectl apply -f static/pihole/deployment.yaml
+  else
+    echo "Warning: setup.sh not found, skipping static workload deployment"
+  fi
+  
+  echo "===== Update Complete ====="
+else
+  echo "Repository is already up to date at commit: $(git rev-parse --short HEAD)"
+  echo "===== No Updates Needed ====="
+fi
+
+========================================
+### File: ./setup.sh
+========================================
+#!/bin/bash
+
+# Fleet Setup Script
+echo "===== Fleet Applications Setup ====="
+
+# Create the weapps namespace if it doesn't exist
+echo "Creating weapps namespace..."
+kubectl create namespace weapps --dry-run=client -o yaml | kubectl apply -f -
+
+# Try to get GitHub token from kubernetes secret
+if kubectl get secret -n fleet-local github-readonly-token &>/dev/null; then
+  echo "Getting GitHub token from Kubernetes secret..."
+  READ_ONLY_TOKEN=$(kubectl get secret -n fleet-local github-readonly-token -o jsonpath='{.data.token}' | base64 -d)
+  
+  # Create/update the github-container-registry secret
+  echo "Updating GitHub container registry secret..."
+  kubectl create secret docker-registry github-container-registry \
+    --namespace weapps \
+    --docker-server=ghcr.io \
+    --docker-username=FoeT \
+    --docker-password=${READ_ONLY_TOKEN} \
+    --docker-email=forrest.thurgood@gmail.com \
+    --dry-run=client -o yaml | kubectl apply -f -
+else
+  echo "WARNING: GitHub token not found in Kubernetes secret."
+  echo "Some container images may not be accessible without a valid token."
+  echo "To create the token secret, run:"
+  echo "kubectl create secret generic github-readonly-token -n fleet-local --from-literal=token=YOUR_TOKEN"
+fi
+
+# Create IngressClass resources for K3s Traefik
+#echo "Creating IngressClass resources..."
+#kubectl apply -f fleet/services/traefik-config/ingressclass.yaml
+
+# Create middleware resources
+#echo "Creating middleware resources..."
+#kubectl apply -f fleet/services/traefik-config/middlewares.yaml
+
+# Create persistent volume claim
+echo "Creating persistent volume claim..."
+kubectl patch pv pinas -p '{"spec":{"claimRef": null}}'
+sleep 3
+kubectl apply -f fleet/base/persistent-volumes.yaml
+
+# Create placeholder for secrets (replace with actual secrets)
+echo ""
+echo "Secrets management:"
+echo "- GitHub container registry: Automatically created from github-readonly-token"
+echo "- Database secrets: Included in the YAML files in fleet/services/databases/"
+echo ""
+
+# Create Cloudflare token secret for cert-manager
+echo "===== Cloudflare API Token Setup ====="
+echo "Cert-Manager requires a Cloudflare API token for DNS validation when issuing TLS certificates."
+echo "This is CRITICAL for wildcard certificates and proper HTTPS functionality."
+echo ""
+echo "To create a proper Cloudflare API token:"
+echo "1. Log in to the Cloudflare dashboard (https://dash.cloudflare.com)"
+echo "2. Navigate to My Profile > API Tokens"
+echo "3. Click 'Create Token'"
+echo "4. Either use the 'Edit zone DNS' template or create a custom token with these permissions:"
+echo "   - Zone.Zone: Read"
+echo "   - Zone.DNS: Edit"
+echo "5. Set the token scope to allow access to ALL your domains:"
+echo "   - Include ALL zones (domains) that need certificates:"
+echo "     - mynetapp.site"
+echo "     - coparentcare.com"
+echo "     - [any other domains you host]"
+echo "6. Set a reasonable TTL for the token (e.g., 6 months or 1 year)"
+echo "7. Generate the token and SAVE IT SECURELY - it will only be shown once"
+echo ""
+echo "Then create the Kubernetes secret with your token:"
+echo 'kubectl create secret generic cloudflare-token-secret --namespace=cert-manager --from-literal=cloudflare-token="YOUR-ACTUAL-TOKEN"'
+echo ""
+echo "To verify your certificates are working:"
+echo "1. Check certificate status:"
+echo "   kubectl get certificates -n weapps"
+echo "2. If any show 'False' under READY, check the issues:"
+echo "   kubectl describe certificate [certificate-name] -n weapps"
+echo "3. To force renewal of an expired certificate:"
+echo "   kubectl delete certificate [certificate-name] -n weapps"
+echo "   kubectl apply -f fleet/services/cert-manager/certificates.yaml"
+echo ""
+echo "TROUBLESHOOTING CERTIFICATE ISSUES:"
+echo "- If DNS01 challenges fail, verify your Cloudflare token has proper permissions"
+echo "- For specific domains, use HTTP01 validation instead of DNS01 (see certificates.yaml)"
+echo "- Check challenges status: kubectl get challenges.acme.cert-manager.io -n weapps"
+echo "- For details: kubectl describe challenges.acme.cert-manager.io [challenge-name] -n weapps"
+echo ""
+
+# Deploy static workloads (not managed by Fleet)
+echo "Deploying static workloads..."
+echo "- Deploying PiHole..."
+#kubectl apply -f static/pihole/deployment.yaml
+
+# Apply the Fleet GitRepo configuration
+echo "You can now apply this configuration to your Fleet using:"
+echo "  ./fleet-repo.sh"
+echo "Note: Bundle names will be created with the prefix 'rancher-apps-fleet-',"
+echo "  so any dependsOn references in fleet.yaml files should use the full name"
+echo "  (e.g. rancher-apps-fleet-services-cert-manager, not rancher-apps-services-cert-manager)"
+
+echo "===== Setup Complete ====="
+
+========================================
+### File: ./fleet/base/persistent-volumes.yaml
+========================================
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: pinas-root
+  annotations:
+    {}
+  labels:
+    {}
+  namespace: weapps
+spec:
+  selector:
+    matchLabels:
+  accessModes:
+    - ReadWriteOnce
+    - ReadOnlyMany
+    - ReadWriteMany
+  resources:
+    requests:
+      storage: 10Gi
+  storageClassName: ''
+  volumeName: pinas
+
+========================================
+### File: ./fleet/base/secrets.yaml
+========================================
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: linuxserver-map
+  namespace: weapps
+data:
+  PUID: "1000"
+  PGID: "1000"
+  TZ: "Australia/Sydney"
+
+========================================
+### File: ./fleet/base/fleet.yaml
+========================================
+# Base Fleet configuration
+defaultNamespace: weapps
+
+# Use Helm with takeOwnership to address existing GitRepo issues
+helm:
+  takeOwnership: true   # This will add the required labels and annotations to existing resources
+  force: true           # Force resource updates to address content hash issues
+  releaseName: rancher-apps  # Specify the release name to match existing GitRepo
+  releaseNamespace: weapps   # Specify the release namespace for annotations
+  timeoutSeconds: 600    # Increase timeout for deployments
+
+# Add global ownership annotations for existing resources
+defaultLabels:
+  app.kubernetes.io/managed-by: Helm
+
+defaultAnnotations:
+  meta.helm.sh/release-namespace: weapps
+  meta.helm.sh/release-name: rancher-apps
+
+# Add troubleshooting options
+paused: false          # Ensure deployments are not paused
+failurePolicy: ignore  # Continue deployment even if some resources fail
+
+targetCustomizations:
+  - name: default
+    namespaceOptions:
+      # Configure namespace ownership
+      labels:
+        app.kubernetes.io/managed-by: Helm
+      annotations:
+        meta.helm.sh/release-name: rancher-apps-services-common
+        meta.helm.sh/release-namespace: weapps
+    
+    # Add specific resources to handle existing PVCs
+    resources:
+      - name: pinas-root-pvc-ownership
+        kind: PersistentVolumeClaim
+        name: pinas-root
+        namespace: weapps
+        force: true
+        patches:
+          - op: add
+            path: /metadata/labels
+            value:
+              app.kubernetes.io/managed-by: Helm
+          - op: add
+            path: /metadata/annotations
+            value:
+              meta.helm.sh/release-name: rancher-apps
+              meta.helm.sh/release-namespace: weapps
+              
+      - name: traefik-middleware-ownership
+        kind: Middleware
+        apiVersion: traefik.containo.us/v1alpha1
+        name: default-headers
+        namespace: weapps
+        force: true
+        patches:
+          - op: add
+            path: /metadata/labels
+            value:
+              app.kubernetes.io/managed-by: Helm
+          - op: add
+            path: /metadata/annotations
+            value:
+              meta.helm.sh/release-name: rancher-apps-services-traefik-config
+              meta.helm.sh/release-namespace: weapps
+    
+    helm:
+      # Common Helm values for all applications in this bundle
+      values:
+        global:           # Configure common services
+          ingressClass: traefik
+          domains:
+            - domainSuffix: mynetapp.site
+              tlsSecretName: mynetapp-site-production-tls
+            - domainSuffix: coparentcare.com
+              tlsSecretName: coparentcare-com-production-tls
+          traefik:
+            middleware:
+              existingPolicyOverride: true  # Allow taking ownership of existing middleware
+              annotations:
+                meta.helm.sh/release-name: rancher-apps-services-traefik-config
+                meta.helm.sh/release-namespace: weapps
+              labels:
+                app.kubernetes.io/managed-by: Helm
+========================================
+### File: ./fleet/fleet.yaml
+========================================
+defaultNamespace: weapps
+
+# Core infrastructure components - only cert-manager is managed by Fleet
+dependsOn:
+  - name: rancher-apps-fleet-services-cert-manager
+
+# Define all bundles to be deployed
+subFolders:
+  mode: first
+subFolderOptions:
+  cert-manager:
+    helm:
+      releaseName: cert-manager
+      values:
+        # Only common overrides here - see service/cert-manager/fleet.yaml for details
+
+  services:
+    subFolders:
+      mode: all
+    subFolderOptions:
+      common:
+        # Must be first
+        order: 1
+        
+      traefik-config:
+        # Must come after common but before apps
+        order: 2
+        dependsOn:
+          - name: common
+
+      # Databases - start before applications
+      databases:
+        order: 5
+        dependsOn:
+          - name: common
+        subFolders:
+          mode: all
+        subFolderOptions:
+          xchat-db:
+            order: 1
+          mm-db:
+            order: 2
+          foretold-db:
+            order: 3
+          
+      nginx:
+        order: 10
+        dependsOn:
+          - name: common
+          - name: traefik-config
+          - name: databases
+          
+      code-server:
+        order: 15
+        dependsOn:
+          - name: common
+          - name: traefik-config
+          
+      nextcloud:
+        order: 18
+        dependsOn:
+          - name: common
+          - name: traefik-config
+          - name: nginx
+          
+      exchat:
+        order: 20
+        dependsOn:
+          - name: common
+          - name: traefik-config
+          - name: nginx
+          - name: databases/xchat-db
+      
+      mosquitto:
+        order: 30
+        dependsOn:
+          - name: common
+      
+      ha-proxy:
+        order: 40
+        dependsOn:
+          - name: common
+          - name: traefik-config
+      
+      coparentcare:
+        order: 50
+        dependsOn:
+          - name: common
+          - name: traefik-config
+          - name: nginx
+
+========================================
+### File: ./fleet/services/cert-manager/issuers.yaml
+========================================
+# Cert-Manager Cluster Issuers
+
+# LetsEncrypt Production
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata:
+  name: letsencrypt-production
+spec:
+  acme:
+    server: https://acme-v02.api.letsencrypt.org/directory
+    email: admin@weapps.com.au
+    privateKeySecretRef:
+      name: letsencrypt-production
+    solvers:
+      # Specific solver for mynetapp.site
+      - dns01:
+          cloudflare:
+            email: admin@weapps.com.au
+            apiTokenSecretRef:
+              name: cloudflare-token-secret
+              key: cloudflare-token
+            zoneID: "829321251e07c4dd078637aaef91f494"    
+        selector:
+          dnsZones:
+            - "mynetapp.site"
+      
+      # Specific solver for coparentcare.com
+      - dns01:
+          cloudflare:
+            email: admin@weapps.com.au
+            apiTokenSecretRef:
+              name: cloudflare-token-secret
+              key: cloudflare-token
+            zoneID: "b61fff41621defbffa011e4ecb0507cb"  
+        selector:
+          dnsZones:
+            - "coparentcare.com"
+          
+      # HTTP-01 solver as fallback or for non-wildcard domains
+      - http01:
+          ingress:
+            class: traefik
+---
+# LetsEncrypt Staging (for testing)
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata:
+  name: letsencrypt-staging
+spec:
+  acme:
+    server: https://acme-staging-v02.api.letsencrypt.org/directory
+    email: admin@weapps.com.au
+    privateKeySecretRef:
+      name: letsencrypt-staging
+    solvers:
+      # Specific solver for mynetapp.site
+      - dns01:
+          cloudflare:
+            email: admin@weapps.com.au
+            apiTokenSecretRef:
+              name: cloudflare-token-secret
+              key: cloudflare-token
+        selector:
+          dnsZones:
+            - "mynetapp.site"
+      
+      # Specific solver for coparentcare.com
+      - dns01:
+          cloudflare:
+            email: admin@weapps.com.au
+            apiTokenSecretRef:
+              name: cloudflare-token-secret
+              key: cloudflare-token
+        selector:
+          dnsZones:
+            - "coparentcare.com"
+      
+      # HTTP-01 solver as fallback or testing
+      - http01:
+          ingress:
+            class: traefik
+---
+# Cloudflare API Token Secret
+apiVersion: v1
+kind: Secret
+metadata:
+  name: cloudflare-token-secret
+  namespace: cert-manager
+type: Opaque
+data:
+  # Replace with your actual Cloudflare token (base64 encoded)
+  cloudflare-token: UmVwbGFjZSB0aGlzIHdpdGggeW91ciBhY3R1YWwgdG9rZW4=
+========================================
+### File: ./fleet/services/cert-manager/fleet.yaml
+========================================
+defaultNamespace: cert-manager
+helm:
+  chart: cert-manager
+  repo: https://charts.jetstack.io
+  version: ~1.11.0
+  releaseName: cert-manager
+  values:
+    installCRDs: true
+    prometheus:
+      enabled: false
+    webhook:
+      timeoutSeconds: 10
+      securePort: 10250
+    extraArgs:
+      - --dns01-recursive-nameservers=1.1.1.1:53,9.9.9.9:53
+========================================
+### File: ./fleet/services/cert-manager/certificates.yaml
+========================================
+# Certificates for domains
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: mynetapp-site
+  namespace: weapps
+spec:
+  secretName: mynetapp-site-production-tls
+  issuerRef:
+    name: letsencrypt-production
+    kind: ClusterIssuer
+  commonName: "*.mynetapp.site"
+  dnsNames:
+  - "*.mynetapp.site"
+  - "mynetapp.site"
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: coparentcare-com-wildcard
+  namespace: weapps
+spec:
+  # The secret that will be created and contain the TLS certificate and key.
+  secretName: coparentcare-com-wildcard-tls
+
+  # Use your production issuer once you have confirmed your setup with the staging issuer.
+  issuerRef:
+    name: letsencrypt-production # Changed from letsencrypt-staging
+    kind: ClusterIssuer
+
+  # The primary SAN. The first dnsName is also used as the Common Name.
+  dnsNames:
+  - "*.coparentcare.com"
+  - "coparentcare.com"
+========================================
+### File: ./fleet/services/databases/xchat-db/fleet.yaml
+========================================
+defaultNamespace: weapps
+namespace: weapps
+========================================
+### File: ./fleet/services/databases/xchat-db/deployment.yaml
+========================================
+apiVersion: v1
+kind: Secret
+metadata:
+  name: exchat-secrets
+  namespace: weapps
+type: Opaque
+data:
+  EMAIL_APP_PASS: bXZlcCBxaHdlIHRkYmsgYnhyZw==
+  EMAIL_PASS: SHAwcGVuXjFldw==
+  EMAIL_PORT: NTg3
+  EMAIL_USER: Y29wYXJlbnRjYXJlQGdtYWlsLmNvbQ==
+  GOOGLE_RECAPTCHA_SECRET_KEY: NkxmNjI3d21BQUFBQUNYWHF4Tld0REVzNmgxTThPRFdFRlJwMk56Tg==
+  MYSQL_DATABASE: ZXhjaGF0LWRi
+  MYSQL_PASSWORD: bDN0bTMxbg==
+  MYSQL_ROOT_PASSWORD: bDN0bTMxbk4wdw==
+  MYSQL_USER: Zm9l
+  SECRET_KEY: NWY2YWQwYmYxZjI4N2ZmNDk1ZTgyOTQyYmE0ZDIxOTlkMGFkYzVhNw==
+  SOCIAL_AUTH_FACEBOOK_KEY: NDQ2MTUwNjA5MjgwMDk3
+  SOCIAL_AUTH_FACEBOOK_SECRET: NTQ5NmRiNmEzYzFkZGM1OTE5NDRjZTJhNTkzMWE2Y2U=
+  SOCIAL_AUTH_GITHUB_KEY: YzdjYmVlMGRkMmEzYjhjMDBmZTM=
+  SOCIAL_AUTH_GITHUB_SECRET: NWY2YWQwYmYxZjI4N2ZmNDk1ZTgyOTQyYmE0ZDIxOTlkMGFkYzVhNw==
+  SOCIAL_AUTH_GOOGLE_OAUTH2_KEY: >-
+    MzcxNDM4OTEzNTUwLTkxcjQ4bmJqcXNibzliOW0zZmU5MHQ5M2o3bjl2N2lpLmFwcHMuZ29vZ2xldXNlcmNvbnRlbnQuY29t
+  SOCIAL_AUTH_GOOGLE_OAUTH2_SECRET: aWZuUWRudXhzb2hza3lIajFkd1hJMVJ5
+  SOCIAL_AUTH_TWITTER_KEY: TXVsZkZjREsyek5INGc3cWRoZEhMOGdrZw==
+  SOCIAL_AUTH_TWITTER_SECRET: RXdoOWpva05mc2FLdkRxcThxTXgxdTRPY2RhRDg1VDg3QlRmMldORTFNZmNWSVFmc2Q=
+  AGORA_APP_CERTIFICATE: YWNhYTEzMTk3NjE2NGM3Njg2NDc1NDRkNDUyNTM0OGU=
+  AGORA_APP_ID: ZWZlMTc1MzAyOTY5NDAxOTgyMjA0NDQ2MDczNDExMzA=
+  GOOGLE_APPLICATION_CREDENTIALS: >-
+    L3Zhci93d3cvZXhjaGF0L2Jsb2cvdGVtcGxhdGVzL2V4dHJhcy9zZXJ2aWNlQWNjb3VudEtleS5qc29u
+  GEMINI_API_KEY: AIzaSyDPs9DY1rph5iJueBDqkt5vLEnGz-0BBR0  
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: exchat-db-service
+  namespace: weapps
+spec:
+  selector:
+    app: exchat-db-workload
+  ports:
+    - protocol: TCP
+      port: 3306
+      targetPort: 3306
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: exchat-db-workload-deployment
+  namespace: weapps
+spec:
+  selector:
+    matchLabels:
+      app: exchat-db-workload
+  replicas: 1
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app: exchat-db-workload
+    spec:
+      containers:
+      - name: exchat-db-workload
+        envFrom:
+        - secretRef:
+            name: exchat-secrets
+            optional: false
+        image: mariadb:latest
+        ports: 
+        - containerPort: 3306
+        volumeMounts:
+        - mountPath: /var/lib/mysql
+          name: pinas-root
+          subPath: scripts/git/weapps-exchat-db/files
+      restartPolicy: Always
+      schedulerName: default-scheduler
+      volumes:
+      - name: pinas-root
+        persistentVolumeClaim:
+          claimName: pinas-root
+      - name: exchat-secrets
+        secret:
+          defaultMode: 420
+          optional: false
+          secretName: exchat-secrets
+========================================
+### File: ./fleet/services/databases/fleet.yaml
+========================================
+defaultNamespace: weapps
+namespace: weapps
+========================================
+### File: ./fleet/services/databases/foretold-db/deployment.yaml
+========================================
+apiVersion: v1
+kind: Secret
+metadata:
+  name: foretold-secrets
+  namespace: weapps
+type: Opaque
+data:
+  SECRET_KEY: NWY2YWQwYmYxZjI4N2ZmNDk1ZTgyOTQyYmE0ZDIxOTlkMGFkYzVhNw==
+  SOCIAL_AUTH_FACEBOOK_KEY: NDQ2MTUwNjA5MjgwMDk3
+  SOCIAL_AUTH_FACEBOOK_SECRET: NTQ5NmRiNmEzYzFkZGM1OTE5NDRjZTJhNTkzMWE2Y2U=
+  SOCIAL_AUTH_GITHUB_KEY: YzdjYmVlMGRkMmEzYjhjMDBmZTM=
+  SOCIAL_AUTH_GITHUB_SECRET: NWY2YWQwYmYxZjI4N2ZmNDk1ZTgyOTQyYmE0ZDIxOTlkMGFkYzVhNw==
+  SOCIAL_AUTH_GOOGLE_OAUTH2_KEY: MzcxNDM4OTEzNTUwLTkxcjQ4bmJqcXNibzliOW0zZmU5MHQ5M2o3bjl2N2lpLmFwcHMuZ29vZ2xldXNlcmNvbnRlbnQuY29t
+  SOCIAL_AUTH_GOOGLE_OAUTH2_SECRET: aWZuUWRudXhzb2hza3lIajFkd1hJMVJ5
+  SOCIAL_AUTH_TWITTER_KEY: TXVsZkZjREsyek5INGc3cWRoZEhMOGdrZw==
+  SOCIAL_AUTH_TWITTER_SECRET: RXdoOWpva05mc2FLdkRxcThxTXgxdTRPY2RhRDg1VDg3QlRmMldORTFNZmNWSVFmc2Q=
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: maria-db-secrets
+  namespace: weapps
+type: Opaque
+data:
+  MYSQL_DATABASE: d2VhcHBz
+  MYSQL_PASSWORD: bWFudWFsMjA=
+  MYSQL_ROOT_PASSWORD: bUBudWFsMjA=
+  MYSQL_USER: d2VhcHBz
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: foretold-db-service
+  namespace: weapps
+spec:
+  selector:
+    app: foretold-db-workload
+  ports:
+    - protocol: TCP
+      port: 3306
+      targetPort: 3306
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: foretold-db-workload-deployment
+  namespace: weapps
+spec:
+  selector:
+    matchLabels:
+      app: foretold-db-workload
+  replicas: 1
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app: foretold-db-workload
+    spec:
+      containers:
+      - name: foretold-db-workload
+        envFrom:
+        - secretRef:
+            name: maria-db-secrets
+            optional: false
+        image: mariadb:10.6.4
+        ports: 
+        - containerPort: 3306
+        volumeMounts:
+        - mountPath: /var/lib/mysql
+          name: pinas-root
+          subPath: scripts/git/weapps-foretold-db/files
+      restartPolicy: Always
+      schedulerName: default-scheduler
+      volumes:
+      - name: pinas-root
+        persistentVolumeClaim:
+          claimName: pinas-root
+      - name: maria-db-secrets
+        secret:
+          defaultMode: 420
+          optional: false
+          secretName: maria-db-secrets
+========================================
+### File: ./fleet/services/databases/foretold-db/fleet.yaml
+========================================
+defaultNamespace: weapps
+namespace: weapps
+========================================
+### File: ./fleet/services/databases/mm-db/fleet.yaml
+========================================
+defaultNamespace: weapps
+namespace: weapps
+========================================
+### File: ./fleet/services/databases/mm-db/deployment.yaml
+========================================
+apiVersion: v1
+kind: Secret
+metadata:
+  name: mmeraki-secrets
+  namespace: weapps
+type: Opaque
+data:
+  MYSQL_DATABASE: bW1lcmFraS1kYg==
+  MYSQL_PASSWORD: bDN0bTMxbg==
+  MYSQL_ROOT_PASSWORD: bDN0bTMxbk4wdw==
+  MYSQL_USER: Zm9l
+  SECRET_KEY: NWY2YWQwYmYxZjI4N2ZmNDk1ZTgyOTQyYmE0ZDIxOTlkMGFkYzVhNw==
+  SOCIAL_AUTH_FACEBOOK_KEY: NDQ2MTUwNjA5MjgwMDk3
+  SOCIAL_AUTH_FACEBOOK_SECRET: NTQ5NmRiNmEzYzFkZGM1OTE5NDRjZTJhNTkzMWE2Y2U=
+  SOCIAL_AUTH_GITHUB_KEY: YzdjYmVlMGRkMmEzYjhjMDBmZTM=
+  SOCIAL_AUTH_GITHUB_SECRET: NWY2YWQwYmYxZjI4N2ZmNDk1ZTgyOTQyYmE0ZDIxOTlkMGFkYzVhNw==
+  SOCIAL_AUTH_GOOGLE_OAUTH2_KEY: MzcxNDM4OTEzNTUwLTkxcjQ4bmJqcXNibzliOW0zZmU5MHQ5M2o3bjl2N2lpLmFwcHMuZ29vZ2xldXNlcmNvbnRlbnQuY29t
+  SOCIAL_AUTH_GOOGLE_OAUTH2_SECRET: aWZuUWRudXhzb2hza3lIajFkd1hJMVJ5
+  SOCIAL_AUTH_TWITTER_KEY: TXVsZkZjREsyek5INGc3cWRoZEhMOGdrZw==
+  SOCIAL_AUTH_TWITTER_SECRET: RXdoOWpva05mc2FLdkRxcThxTXgxdTRPY2RhRDg1VDg3QlRmMldORTFNZmNWSVFmc2Q=
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: mmeraki-db-service
+  namespace: weapps
+spec:
+  selector:
+    app: mmeraki-db-workload
+  ports:
+    - protocol: TCP
+      port: 3306
+      targetPort: 3306
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mmeraki-db-workload-deployment
+  namespace: weapps
+spec:
+  selector:
+    matchLabels:
+      app: mmeraki-db-workload
+  replicas: 1
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app: mmeraki-db-workload
+    spec:
+      containers:
+      - name: mmeraki-db-workload
+        envFrom:
+        - secretRef:
+            name: mmeraki-secrets
+            optional: false
+        image: mariadb:10.6.4 
+        ports: 
+        - containerPort: 3306
+        volumeMounts:
+        - mountPath: /var/lib/mysql
+          name: pinas-root
+          subPath: scripts/git/weapps-mmeraki-db/files
+      restartPolicy: Always
+      schedulerName: default-scheduler
+      volumes:
+      - name: pinas-root
+        persistentVolumeClaim:
+          claimName: pinas-root
+      - name: mmeraki-secrets
+        secret:
+          defaultMode: 420
+          optional: false
+          secretName: mmeraki-secrets
+========================================
+### File: ./fleet/services/mmeraki/fleet.yaml
+========================================
+defaultNamespace: weapps
+helm:
+  releaseName: mmeraki
+  version: v3
+  
+  
+========================================
+### File: ./fleet/services/mmeraki/deployment.yaml
+========================================
+apiVersion: v1
+kind: Service
+metadata:
+  name: mmeraki-service
+  namespace: weapps
+spec:
+  selector:
+    app: mmeraki-workload
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 8000
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: mmeraki-service-ingress
+  namespace: weapps
+spec:
+  ingressClassName: traefik
+  rules:
+  - host: mm.mynetapp.site
+    http:
+      paths:
+      - pathType: ImplementationSpecific
+        backend:
+          service:
+            name: nginx-service
+            port:
+              number: 80
+  tls:
+  - hosts:
+    - mm.mynetapp.site
+    secretName: mynetapp-site-production-tls     
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mmeraki-workload-deployment
+  namespace: weapps
+spec:
+  selector:
+    matchLabels:
+      app: mmeraki-workload
+  replicas: 1
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app: mmeraki-workload
+    spec:    
+      containers:
+      - envFrom:
+        - secretRef:
+            name: mmeraki-secrets
+            optional: false
+        image: ghcr.io/foet/mmeraki:latest
+        imagePullPolicy: Always
+        name: mmeraki-workload
+        ports:
+        - containerPort: 8000
+          name: rancher
+          protocol: TCP
+        volumeMounts:
+        - mountPath: /var/www/design/media
+          name: pinas-root
+          subPath: scripts/git/mmeraki/media      
+        - mountPath: /var/www/design/static
+          name: pinas-root
+          subPath: scripts/git/mmeraki/static            
+      imagePullSecrets:
+      - name: github-container-registry
+      restartPolicy: Always
+      volumes:
+      - name: pinas-root
+        persistentVolumeClaim:
+          claimName: pinas-root
+      - name: mmeraki-secrets
+        secret:
+          defaultMode: 420
+          optional: false
+          secretName: mmeraki-secrets
+========================================
+### File: ./fleet/services/nginx/maintenance.html
+========================================
+<\!DOCTYPE html>
+<html>
+<head>
+    <title>Service Temporarily Unavailable</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            padding: 50px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background-color: white;
+            border-radius: 10px;
+            padding: 30px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            max-width: 600px;
+            margin: 0 auto;
+        }
+        h1 {
+            color: #333;
+        }
+        p {
+            color: #666;
+            line-height: 1.6;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Service Temporarily Unavailable</h1>
+        <p>We're sorry, the service you're trying to reach is temporarily unavailable.</p>
+        <p>Our team has been notified and is working to bring it back online.</p>
+        <p>Please try again later.</p>
+    </div>
+</body>
+</html>
+
+========================================
+### File: ./fleet/services/nginx/fleet.yaml
+========================================
+defaultNamespace: weapps
+# Don't use Helm to prevent import issues with existing resources
+helm:
+  takeOwnership: true
+========================================
+### File: ./fleet/services/nginx/deployment.yaml
+========================================
+apiVersion: v1
+data:
+  PGID: "1000"
+  PUID: "1000"
+  TZ: Australia/Sydney
+kind: ConfigMap
+metadata:
+  name: nginx-config-map
+  namespace: weapps
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: nginx-service
+  namespace: weapps
+spec:
+  selector:
+    app: nginx-workload
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 80
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nginx-workload-deployment
+  namespace: weapps
+spec:
+  selector:
+    matchLabels:
+      app: nginx-workload
+  replicas: 1
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app: nginx-workload
+    spec:
+      containers:
+      - name: nginx-workload
+        envFrom:
+        - configMapRef:
+            name: nginx-config-map
+            optional: false
+        image: nginx:alpine
+        ports: 
+        - containerPort: 80
+        volumeMounts:
+        - mountPath: /etc/nginx/conf.d
+          name: pinas-root
+          subPath: scripts/git/nginx/conf.d
+        - mountPath: /media
+          name: pinas-root
+          subPath: scripts/git
+        - mountPath: /var/www/html
+          name: pinas-root
+          subPath: docker/nextcloud/files          
+      restartPolicy: Always
+      volumes:
+      - name: pinas-root
+        persistentVolumeClaim:
+          claimName: pinas-root
+      - configMap:
+          defaultMode: 420
+          name: nginx-config-map
+          optional: false
+        name: nginx-config-map
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: nginx-workload-ingress
+  namespace: weapps
+spec:
+  ingressClassName: traefik
+  rules:
+  - host: nginx.mynetapp.site
+    http:
+      paths:
+      - pathType: ImplementationSpecific
+        backend:
+          service:
+            name: nginx-service
+            port:
+              number: 80
+  tls:
+  - hosts:
+    - nginx.mynetapp.site
+    secretName: mynetapp-site-production-tls
+========================================
+### File: ./fleet/services/nextcloud/fleet.yaml
+========================================
+defaultNamespace: weapps
+namespace: weapps
+========================================
+### File: ./fleet/services/nextcloud/deployment.yaml
+========================================
+apiVersion: v1
+kind: Service
+metadata:
+  name: nextcloud-service
+  namespace: weapps
+spec:
+  selector:
+    app: nextcloud-workload
+  ports:
+    - protocol: TCP
+      port: 9000
+      targetPort: 9000
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: nextcloud-service-ingress
+  namespace: weapps
+  annotations:
+    traefik.ingress.kubernetes.io/router.entrypoints: websecure
+    traefik.ingress.kubernetes.io/router.tls: "true"
+spec:
+  ingressClassName: traefik
+  rules:
+  - host: nextcloud.mynetapp.site
+    http:
+      paths:
+      - pathType: ImplementationSpecific
+        backend:
+          service:
+            name: nginx-service
+            port:
+              number: 80
+  tls:
+  - hosts:
+    - nextcloud.mynetapp.site
+    secretName: mynetapp-site-production-tls      
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nextcloud-workload-deployment
+  namespace: weapps
+spec:
+  selector:
+    matchLabels:
+      app: nextcloud-workload
+  replicas: 1
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app: nextcloud-workload
+    spec:
+      containers:
+      - name: nextcloud-workload
+        image: nextcloud:31-fpm
+        ports: 
+        - containerPort: 9000
+        volumeMounts:
+        - mountPath: /var/www/html
+          name: pinas-root
+          subPath: docker/nextcloud/files
+      restartPolicy: Always
+      schedulerName: default-scheduler
+      volumes:
+      - name: pinas-root
+        persistentVolumeClaim:
+          claimName: pinas-root
+      - configMap:
+          defaultMode: 420
+          name: linuxserver-map
+          optional: false
+        name: linuxserver-map
+========================================
+### File: ./fleet/services/mosquitto/fleet.yaml
+========================================
+defaultNamespace: weapps
+namespace: weapps
+helm:
+  takeOwnership: true
+  releaseName: mosquitto-server
+
+========================================
+### File: ./fleet/services/mosquitto/deployment.yaml
+========================================
+apiVersion: v1
+kind: Service
+metadata:
+  name: mosquitto
+  namespace: weapps
+  annotations:
+    metallb.universe.tf/allow-shared-ip: "true"
+    metallb.universe.tf/loadBalancerIPs: "172.16.0.96"  
+spec:
+  type: LoadBalancer  # Or ClusterIP if you don't need external access
+  ports:
+  - name: mqtt
+    port: 1883
+    targetPort: 1883
+    protocol: TCP
+  - name: websocket
+    port: 9001
+    targetPort: 9001
+    protocol: TCP
+  selector:
+    app: mosquitto
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mosquitto
+  namespace: weapps
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: mosquitto
+  template:
+    metadata:
+      labels:
+        app: mosquitto
+    spec:
+      containers:
+      - name: mosquitto
+        image: eclipse-mosquitto
+        ports:
+        - containerPort: 1883
+          name: mqtt
+        - containerPort: 9001
+          name: websocket
+        volumeMounts:
+        - name: pinas-root
+          mountPath: /mosquitto
+          subPath: docker/mosquitto/files/config
+        - name: pinas-root
+          mountPath: /mosquitto/data
+          subPath: docker/mosquitto/files/data
+        - name: pinas-root
+          mountPath: /mosquitto/log
+          subPath: docker/mosquitto/files/logs                    
+      volumes:
+      - name: pinas-root
+        persistentVolumeClaim:
+          claimName: pinas-root
+========================================
+### File: ./fleet/services/pihole/README.md
+========================================
+# PiHole is deployed directly by setup.sh and not managed by Fleet
+
+========================================
+### File: ./fleet/services/common/fleet.yaml
+========================================
+defaultNamespace: weapps
+
+========================================
+### File: ./fleet/services/exchat/dev-environment-claude.yaml
+========================================
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: exchat-dev-claude
+  namespace: weapps
+spec:
+  selector:
+    matchLabels:
+      app: exchat-dev-claude
+  replicas: 1
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app: exchat-dev-claude
+    spec:    
+      containers:
+      - envFrom:
+        - secretRef:
+            name: exchat-secrets
+            optional: false
+        image: python:3.10
+        imagePullPolicy: Always
+        name: exchat-dev-claude
+        stdin: true
+        ports:
+        - containerPort: 8000
+          name: exchat-dev-port
+          protocol: TCP
+        volumeMounts:
+        - mountPath: /var/www/exchat
+          name: pinas-root
+          subPath: scripts/git/Exchat_Social_Network            
+        - mountPath: /var/www/exchat/media
+          name: pinas-root
+          subPath: scripts/git/Exchat_Social_Network/media      
+        - mountPath: /var/www/exchat/static
+          name: pinas-root
+          subPath: scripts/git/Exchat_Social_Network/static     
+        command:
+          - /bin/sh
+          - -c
+          - |
+            apt-get update
+            apt-get install -y npm
+            npm install -g @anthropic-ai/claude-code
+            npm install -g @google/gemini-cli
+            pip3 install -r requirements.txt
+            /bin/bash
+        workingDir: /var/www/exchat     
+      imagePullSecrets:
+      - name: github-container-registry
+      restartPolicy: Always
+      volumes:
+      - name: pinas-root
+        persistentVolumeClaim:
+          claimName: pinas-root
+      - name: exchat-secrets
+        secret:
+          defaultMode: 420
+          optional: false
+          secretName: exchat-secrets
+========================================
+### File: ./fleet/services/exchat/fleet.yaml
+========================================
+defaultNamespace: weapps
+namespace: weapps
+========================================
+### File: ./fleet/services/exchat/dev-environment.yaml
+========================================
+apiVersion: v1
+kind: Service
+metadata:
+  name: exchat-dev-service
+  namespace: weapps
+spec:
+  selector:
+    app: exchat-dev-workload
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 8000
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: exchat-dev-service-ingress
+  namespace: weapps
+  annotations:
+    traefik.ingress.kubernetes.io/router.entrypoints: websecure
+    traefik.ingress.kubernetes.io/router.tls: "true"
+spec:
+  ingressClassName: traefik
+  rules:
+  - host: exchatdev.mynetapp.site
+    http:
+      paths:
+      - pathType: ImplementationSpecific
+        backend:
+          service:
+            name: nginx-service
+            port:
+              number: 80
+  tls:
+  - hosts:
+    - exchatdev.mynetapp.site
+    secretName: mynetapp-site-production-tls
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: exchat-dev-deployment
+  namespace: weapps
+spec:
+  selector:
+    matchLabels:
+      app: exchat-dev-workload
+  replicas: 1
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app: exchat-dev-workload
+    spec:    
+      containers:
+      - envFrom:
+        - secretRef:
+            name: exchat-secrets
+            optional: false
+        image: python:3.10
+        imagePullPolicy: Always
+        name: exchat-dev-workload
+        stdin: true
+        ports:
+        - containerPort: 8000
+          name: exchat-dev-port
+          protocol: TCP
+        volumeMounts:
+        - mountPath: /var/www/exchat
+          name: pinas-root
+          subPath: scripts/git/Exchat_Social_Network            
+        - mountPath: /var/www/exchat/media
+          name: pinas-root
+          subPath: scripts/git/Exchat_Social_Network/media      
+        - mountPath: /var/www/exchat/static
+          name: pinas-root
+          subPath: scripts/git/Exchat_Social_Network/static     
+        command:
+          - /bin/sh
+          - -c
+          - |
+            apt-get update
+            apt-get install -y npm
+            npm install -g @anthropic-ai/claude-code
+            pip3 install -r requirements.txt
+            /bin/bash
+        workingDir: /var/www/exchat     
+      imagePullSecrets:
+      - name: github-container-registry
+      restartPolicy: Always
+      volumes:
+      - name: pinas-root
+        persistentVolumeClaim:
+          claimName: pinas-root
+      - name: exchat-secrets
+        secret:
+          defaultMode: 420
+          optional: false
+          secretName: exchat-secrets
+========================================
+### File: ./fleet/services/exchat/deployment.yaml
+========================================
+apiVersion: v1
+kind: Service
+metadata:
+  name: exchat-service
+  namespace: weapps
+spec:
+  selector:
+    app: exchat-workload
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 8000
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: redis-service
+  namespace: weapps
+spec:
+  selector:
+    app: exchat-redis
+  ports:
+    - protocol: TCP
+      port: 6379
+      targetPort: 6379
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: exchat-service-ingress
+  namespace: weapps
+  annotations:
+    traefik.ingress.kubernetes.io/router.entrypoints: websecure
+    traefik.ingress.kubernetes.io/router.tls: "true"
+spec:
+  ingressClassName: traefik
+  rules:
+  - host: exchat.mynetapp.site
+    http:
+      paths:
+      - pathType: ImplementationSpecific
+        backend:
+          service:
+            name: nginx-service
+            port:
+              number: 80
+  tls:
+  - hosts:
+    - exchat.mynetapp.site
+    secretName: mynetapp-site-production-tls
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: exchat-redis-deployment
+  namespace: weapps
+spec:
+  selector:
+    matchLabels:
+      app: exchat-redis
+  replicas: 1
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app: exchat-redis
+    spec:    
+      containers:
+      - image: redis:latest
+        imagePullPolicy: Always
+        name: exchat-redis
+        ports:
+        - containerPort: 6379
+          name: redis-port
+          protocol: TCP
+      restartPolicy: Always
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: exchat-workload-deployment
+  namespace: weapps
+  annotations:
+    keel.sh/policy: force   # Will update even when using 'latest' tag
+    keel.sh/trigger: poll   # Enables active polling
+    keel.sh/pollSchedule: "@every 1m"  # Check for updates every minute
+spec:
+  selector:
+    matchLabels:
+      app: exchat-workload
+  replicas: 1
+  strategy:
+    type: RollingUpdate
+  template:
+    metadata:
+      labels:
+        app: exchat-workload
+    spec:    
+      containers:
+      - envFrom:
+        - secretRef:
+            name: exchat-secrets
+            optional: false
+        image: ghcr.io/foet/myexchat:latest
+        imagePullPolicy: Always
+        name: exchat-workload
+        ports:
+        - containerPort: 8000
+          name: exchat-port
+          protocol: TCP
+        volumeMounts:
+        - mountPath: /var/www/exchat/media
+          name: pinas-root
+          subPath: scripts/git/Exchat_Social_Network/media      
+        - mountPath: /var/www/exchat/static
+          name: pinas-root
+          subPath: scripts/git/Exchat_Social_Network/static            
+      imagePullSecrets:
+      - name: github-container-registry
+      volumes:
+      - name: pinas-root
+        persistentVolumeClaim:
+          claimName: pinas-root
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: exchat-celery-worker-deployment
+  namespace: weapps
+  annotations:
+    keel.sh/policy: force
+    keel.sh/trigger: poll
+    keel.sh/pollSchedule: "@every 1m"
+spec:
+  selector:
+    matchLabels:
+      app: exchat-celery-worker
+  replicas: 1
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app: exchat-celery-worker
+    spec:
+      containers:
+      - envFrom:
+        - secretRef:
+            name: exchat-secrets
+            optional: false
+        image: python:3.10
+        imagePullPolicy: Always
+        name: exchat-celery-worker
+        command:
+          - /bin/sh
+          - -c
+          - "cd /var/www/exchat && pip install -r requirements.txt && PYTHONPATH=/var/www/exchat celery -A myproject worker -l INFO"
+        volumeMounts:
+        - mountPath: /var/www/exchat
+          name: pinas-root
+          subPath: scripts/git/Exchat_Social_Network
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "100m"
+          limits:
+            memory: "512Mi"
+            cpu: "300m"
+      imagePullSecrets:
+      - name: github-container-registry
+      volumes:
+      - name: pinas-root
+        persistentVolumeClaim:
+          claimName: pinas-root
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: exchat-celery-beat-deployment
+  namespace: weapps
+  annotations:
+    keel.sh/policy: force
+    keel.sh/trigger: poll
+    keel.sh/pollSchedule: "@every 1m"
+spec:
+  selector:
+    matchLabels:
+      app: exchat-celery-beat
+  replicas: 1
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app: exchat-celery-beat
+    spec:
+      containers:
+      - envFrom:
+        - secretRef:
+            name: exchat-secrets
+            optional: false
+        image: python:3.10
+        imagePullPolicy: Always
+        name: exchat-celery-beat
+        command:
+          - /bin/sh
+          - -c
+          - "cd /var/www/exchat && pip install -r requirements.txt && PYTHONPATH=/var/www/exchat celery -A myproject beat -l INFO"
+        volumeMounts:
+        - mountPath: /var/www/exchat
+          name: pinas-root
+          subPath: scripts/git/Exchat_Social_Network
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "50m"
+          limits:
+            memory: "256Mi"
+            cpu: "100m"
+      imagePullSecrets:
+      - name: github-container-registry
+      volumes:
+      - name: pinas-root
+        persistentVolumeClaim:
+          claimName: pinas-root
+========================================
+### File: ./fleet/services/foretold/fleet.yaml
+========================================
+defaultNamespace: weapps
+helm:
+  releaseName: foretold
+  version: v3
+========================================
+### File: ./fleet/services/foretold/deployment.yaml
+========================================
+apiVersion: v1
+kind: Service
+metadata:
+  name: foretold-service
+  namespace: weapps
+spec:
+  selector:
+    app: foretold-workload
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 8000
+---
+apiVersion: traefik.containo.us/v1alpha1
+kind: IngressRoute
+metadata:
+  name: foretold-service-ingress
+  namespace: weapps
+  annotations: 
+    kubernetes.io/ingress.class: traefik-external
+spec:
+  entryPoints:
+    - websecure
+  routes:
+    - match: Host(`foretold.mynetapp.site`)
+      kind: Rule
+      services:
+        - name: nginx-service
+          port: 80      
+  tls:
+    secretName: mynetapp-site-production-tls          
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: foretold-workload-deployment
+  namespace: weapps
+spec:
+  selector:
+    matchLabels:
+      app: foretold-workload
+  replicas: 1
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app: foretold-workload
+    spec:    
+      containers:
+      - envFrom:
+        - secretRef:
+            name: foretold-secrets
+            optional: false
+        - secretRef:
+            name: maria-db-secrets
+            optional: false
+        image: ghcr.io/foet/foretold:latest
+        imagePullPolicy: Always
+        name: foretold-workload
+        ports:
+        - containerPort: 8000
+          name: rancher
+          protocol: TCP
+      imagePullSecrets:
+      - name: github-container-registry
+      restartPolicy: Always
+      volumes:
+      - name: foretold-secrets
+        secret:
+          defaultMode: 420
+          optional: false
+          secretName: foretold-secrets
+      - configMap:
+          defaultMode: 420
+          name: maria-db-secrets
+          optional: false
+        name: maria-db-secrets
+========================================
+### File: ./fleet/services/coparentcare/deployment.yaml
+========================================
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: coparentcare-service-ingress
+  namespace: weapps
+  annotations:
+    traefik.ingress.kubernetes.io/router.entrypoints: websecure
+    traefik.ingress.kubernetes.io/router.tls: "true"
+spec:
+  ingressClassName: traefik
+  rules:
+  - host: www.coparentcare.com
+    http:
+      paths:
+      - pathType: ImplementationSpecific
+        backend:
+          service:
+            name: nginx-service
+            port:
+              number: 80
+  tls:
+  - hosts:
+    - www.coparentcare.com
+    secretName: www-coparentcare-com-tls
+========================================
+### File: ./fleet/services/coparentcare/fleet.yaml
+========================================
+defaultNamespace: weapps
+namespace: weapps
+========================================
+### File: ./fleet/services/traefik-config/middlewares.yaml
+========================================
+# Default security headers middleware
+apiVersion: traefik.containo.us/v1alpha1
+kind: Middleware
+metadata:
+  name: default-headers
+  namespace: weapps
+spec:
+  headers:
+    browserXssFilter: true
+    contentTypeNosniff: true
+    forceSTSHeader: true
+    stsIncludeSubdomains: true
+    stsPreload: true
+    stsSeconds: 15552000
+    customFrameOptionsValue: SAMEORIGIN
+    customRequestHeaders:
+      X-Forwarded-Proto: https
+========================================
+### File: ./fleet/services/traefik-config/ingressclass.yaml
+========================================
+# IngressClass for Traefik - using the existing K3s Traefik instance
+apiVersion: networking.k8s.io/v1
+kind: IngressClass
+metadata:
+  name: traefik
+spec:
+  controller: traefik.io/ingress-controller
+---
+# Annotations to add for all app ingresses
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: traefik-ingress-config
+  namespace: weapps
+data:
+  ingressClass: "traefik"
+  defaultTlsSecret: "weapps/mynetapp-site-production-tls"
+========================================
+### File: ./fleet/services/traefik-config/fleet.yaml
+========================================
+defaultNamespace: weapps
+# Don't use Helm to prevent import issues with existing resources
+helm:
+  takeOwnership: true
+========================================
+### File: ./fleet/services/code-server/deployment.yaml
+========================================
+apiVersion: v1
+data:
+  CONNECTION_TOKEN: ajdqd3UxMmg=
+  SUDO_PASSWORD: ajdqd3UxMmg=
+kind: Secret
+metadata:
+  name: code-server-secret
+  namespace: weapps
+type: Opaque
+---
+apiVersion: v1
+data:
+  PGID: "1000"
+  PUID: "1000"
+  TZ: Australia/Brisbane
+  YOUR_GOOGLE_API_KEY: AIzaSyDPs9DY1rph5iJueBDqkt5vLEnGz-0BBR0
+  SEARCH_ENGINE_ID: 36e74b55da80445cc
+kind: ConfigMap
+metadata:
+  name: linuxserver-map-code
+  namespace: weapps
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: code-workload-service
+  namespace: weapps
+spec:
+  selector:
+    app: code-workload
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 3000
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: code-workload-ingress
+  namespace: weapps
+  annotations:
+    traefik.ingress.kubernetes.io/router.entrypoints: websecure
+    traefik.ingress.kubernetes.io/router.tls: "true"
+spec:
+  ingressClassName: traefik
+  rules:
+  - host: code.mynetapp.site
+    http:
+      paths:
+      - pathType: ImplementationSpecific
+        backend:
+          service:
+            name: code-workload-service
+            port:
+              number: 80
+  tls:
+  - hosts:
+    - code.mynetapp.site
+    secretName: mynetapp-site-production-tls
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: code-workload-deployment
+  namespace: weapps
+spec:
+  selector:
+    matchLabels:
+      app: code-workload
+  replicas: 1
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app: code-workload
+    spec:
+      containers:
+      - name: code-workload
+        envFrom:
+        - configMapRef:
+            name: linuxserver-map-code
+            optional: false
+        - secretRef:
+            name: code-server-secret
+            optional: false
+        image: lscr.io/linuxserver/openvscode-server:latest
+        ports: 
+        - containerPort: 3000
+        volumeMounts:
+        - mountPath: /config/workspace
+          name: pinas-scripts
+          subPath: scripts/
+        - mountPath: /config
+          name: pinas-scripts
+          subPath: docker/code
+        - mountPath: /custom-cont-init.d
+          name: pinas-scripts
+          subPath: docker/code/custom-cont-init.d          
+        - mountPath: /config/workspace/rancher
+          name: pinas-scripts
+          subPath: docker/ranchersetup  
+      restartPolicy: Always
+      schedulerName: default-scheduler
+      volumes:
+      - name: pinas-scripts
+        persistentVolumeClaim:
+          claimName: pinas-root
+      - configMap:
+          defaultMode: 420
+          name: linuxserver-map-code
+          optional: false
+        name: code-map
+      - name: code-secret
+        secret:
+          defaultMode: 420
+          optional: false
+          secretName: code-server-secret
+
+========================================
+### File: ./fleet/services/code-server/fleet.yaml
+========================================
+defaultNamespace: weapps
+namespace: weapps
+helm:
+  takeOwnership: true
+  releaseName: code-server
+========================================
+### File: ./fleet/services/ha-proxy/deployment.yaml
+========================================
+apiVersion: v1
+kind: Service
+metadata:
+  name: ha-rproxy-service
+  namespace: weapps
+spec:
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 8123
+      appProtocol: http
+---
+apiVersion: v1
+kind: Endpoints
+metadata:
+  name: ha-rproxy-service
+  namespace: weapps 
+subsets:
+  - addresses:
+    - ip: 172.16.0.20 # IP address of your Home Assistant server
+    ports:
+    - port: 8123   
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: ha-rproxy-ingress
+  namespace: weapps
+  annotations:
+    traefik.ingress.kubernetes.io/router.entrypoints: websecure
+    traefik.ingress.kubernetes.io/router.tls: "true"
+spec:
+  ingressClassName: traefik
+  rules:
+  - host: ha.mynetapp.site
+    http:
+      paths:
+      - pathType: ImplementationSpecific
+        backend:
+          service:
+            name: ha-rproxy-service
+            port:
+              number: 80
+  tls:
+  - hosts:
+    - ha.mynetapp.site
+    secretName: mynetapp-site-production-tls
+========================================
+### File: ./fleet/services/ha-proxy/fleet.yaml
+========================================
+defaultNamespace: weapps
+namespace: weapps
+========================================
+### File: ./fleet/README.md
+========================================
+# Fleet-Managed Workloads
+
+This directory contains all workloads managed by Fleet through GitOps. The GitRepo is configured to track only this
+directory using the path `fleet` in the GitRepo configuration.
+
+## Structure
+
+- **base/** - Contains base configurations and persistent volume definitions
+- **services/** - Application services organized by component
+  - **common/** - Shared resources used by multiple services
+  - **traefik-config/** - Traefik ingress controller configuration
+  - **cert-manager/** - Certificate management
+  - **databases/** - Database services
+  - And other application services...
+
+## Configuration
+
+The main Fleet configuration is in `fleet.yaml` in this directory. It defines:
+
+1. Default namespace for workload deployment
+2. Dependencies between components
+3. Deployment order for components
+
+## Excluded Workloads
+
+Some workloads with special requirements (like fixed IPs) are managed outside of Fleet.
+These workloads are in the `/static` directory at the root of the repository and
+are deployed directly via the `setup.sh` script.
+========================================
+### File: ./install.sh
+========================================
+#!/bin/bash
+
+
+# Script to install the rancher-apps Fleet GitRepo
+
+echo "===== Installing Rancher Apps GitRepo ====="
+
+# Run the setup script first to create necessary resources
+echo "Running setup script..."
+./setup.sh
+
+# Check if the foet-git secret exists
+if ! kubectl get secret -n fleet-local foet-git &>/dev/null; then
+  echo "Creating foet-git secret for GitHub authentication..."
+  
+  # Prompt for GitHub credentials if needed
+  read -p "Enter GitHub username (default: FoeT): " GITHUB_USER
+  GITHUB_USER=${GITHUB_USER:-FoeT}
+  
+  read -s -p "Enter GitHub personal access token: " GITHUB_TOKEN
+  echo ""
+  
+  if [ -z "$GITHUB_TOKEN" ]; then
+    echo "Error: GitHub token is required"
+    exit 1
+  fi
+  
+  # Create the secret
+  kubectl create secret generic foet-git -n fleet-local \
+    --from-literal=username=${GITHUB_USER} \
+    --from-literal=password=${GITHUB_TOKEN}
+else
+  echo "Using existing foet-git secret for GitHub authentication"
+fi
+
+# Apply the Fleet GitRepo configuration
+echo "Applying Fleet GitRepo configuration..."
+#kubectl apply -f fleet-repo.yaml
+./fleet-repo.sh
+echo "===== Installation complete ====="
+echo "Check GitRepo status with: kubectl get gitrepo -n fleet-local rancher-apps"
+
+========================================
+### File: ./reclaim_volume.sh
+========================================
+kubectl create namespace weapps --dry-run=client -o yaml | kubectl apply -f -
+kubectl patch pv pinas -p '{"spec":{"claimRef": null}}'
+cat <<EOF | kubectl apply -f -
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: pinas-root
+  annotations:
+    {}
+  labels:
+    {}
+  namespace: weapps
+spec:
+  selector:
+    matchLabels:
+  accessModes:
+    - ReadWriteOnce
+    - ReadOnlyMany
+    - ReadWriteMany
+  resources:
+    requests:
+      storage: 10Gi
+  storageClassName: ''
+  volumeName: pinas
+EOF
+kubectl apply -f fleet-repo.yaml
+
+========================================
+### File: ./fix-nginx-config.sh
+========================================
+#!/bin/bash
+
+echo "===== Fixing Nginx Configuration for Co-Parent Care ====="
+
+# 1. Create directory for coparentcare website
+echo "Creating website directory..."
+mkdir -p /home/foe/docker/nextcloud/files/coparentcare
+
+# 2. Create index.html for coparentcare
+cat > /home/foe/docker/nextcloud/files/coparentcare/index.html << 'EOF'
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Co-Parent Care</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            color: #333;
+        }
+        h1 {
+            color: #0078D7;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .container {
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            padding: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .coming-soon {
+            text-align: center;
+            font-size: 1.2em;
+            margin: 30px 0;
+            color: #555;
+        }
+    </style>
+</head>
+<body>
+    <h1>Co-Parent Care</h1>
+    
+    <div class="container">
+        <h2>Welcome to Co-Parent Care</h2>
+        <p>
+            Co-Parent Care is a platform designed to help parents coordinate care for their children
+            efficiently and effectively, especially when managing shared custody arrangements.
+        </p>
+        
+        <div class="coming-soon">
+            <p><strong>Website coming soon!</strong></p>
+            <p>We're working hard to bring you tools that make co-parenting easier.</p>
+        </div>
+        
+        <h3>Our Mission</h3>
+        <p>
+            Our mission is to reduce stress and improve communication between co-parents,
+            ultimately creating a more positive environment for children.
+        </p>
+    </div>
+</body>
+</html>
+EOF
+
+# 3. Create coparentcare.conf in nginx config directory
+echo "Creating nginx configuration for coparentcare.com..."
+cat > /home/foe/scripts/git/nginx/conf.d/coparentcare.conf << 'EOF'
+server {
+    listen 80;
+    server_name www.coparentcare.com coparentcare.com;
+
+    access_log /var/log/nginx/coparentcare.access.log;
+    error_log /var/log/nginx/coparentcare.error.log;
+
+    # Root directory for the website
+    root /var/www/html/coparentcare;
+    index index.html index.htm;
+
+    # Enable gzip compression
+    gzip on;
+    gzip_types text/plain text/css application/json application/javascript text/xml application/xml application/xml+rss text/javascript;
+
+    # Forward real IP
+    real_ip_header X-Forwarded-For;
+    set_real_ip_from 0.0.0.0/0;
+
+    # Default location block
+    location / {
+        try_files $uri $uri/ /index.html;
+        add_header Cache-Control "public, max-age=3600";
+    }
+
+    # Static assets with longer cache
+    location ~* \.(jpg|jpeg|png|gif|ico|css|js)$ {
+        expires 7d;
+    }
+
+    # Do not log favicon.ico requests
+    location = /favicon.ico {
+        log_not_found off;
+        access_log off;
+    }
+
+    # Do not log robots.txt requests
+    location = /robots.txt {
+        allow all;
+        log_not_found off;
+        access_log off;
+    }
+}
+EOF
+
+# 4. Update exchat.conf to remove coparentcare.com
+echo "Updating exchat.conf to remove coparentcare.com..."
+sed -i 's/server_name exchat.mynetapp.site www.coparentcare.com;/server_name exchat.mynetapp.site;/g' /home/foe/scripts/git/nginx/conf.d/exchat.conf
+
+# 5. Set permissions
+echo "Setting permissions..."
+chmod -R 755 /home/foe/docker/nextcloud/files/coparentcare
+chown -R 1000:1000 /home/foe/docker/nextcloud/files/coparentcare
+chown 1000:1000 /home/foe/scripts/git/nginx/conf.d/coparentcare.conf
+chown 1000:1000 /home/foe/scripts/git/nginx/conf.d/exchat.conf
+
+echo "===== Configuration complete ====="
+echo "Now restart the nginx pod with:"
+echo "kubectl rollout restart deployment nginx-workload-deployment -n weapps"
