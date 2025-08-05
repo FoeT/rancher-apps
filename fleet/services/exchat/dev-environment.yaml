@@ -66,6 +66,9 @@ spec:
         - containerPort: 8000
           name: exchat-dev-port
           protocol: TCP
+        - containerPort: 22   # The new SSH port
+          name: ssh
+          protocol: TCP            
         volumeMounts:
         - mountPath: /var/www/exchat
           name: pinas-root
