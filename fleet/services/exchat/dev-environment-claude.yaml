@@ -53,6 +53,7 @@ spec:
               apt-get install -y npm
               npm install -g @anthropic-ai/claude-code
               npm install -g @google/gemini-cli
+              npm install -g @vibe-kit/grok-cli
               pip3 install -r requirements.txt
               
               # Configure SSH

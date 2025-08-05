@@ -81,9 +81,16 @@ spec:
           - -c
           - |
             apt-get update
+            apt-get install -y openssh-server
             apt-get install -y npm
             npm install -g @anthropic-ai/claude-code
             pip3 install -r requirements.txt
+             # Configure SSH
+            mkdir /var/run/sshd
+            echo 'root:j7jwu12h' | chpasswd # <-- IMPORTANT: Change this password!
+            sed -i 's/#PermitRootLogin prohibit-password/PermitRootLogin yes/' /etc/ssh/sshd_config
+            # Start the SSH daemon in the background
+            /usr/sbin/sshd &            
             /bin/bash
         workingDir: /var/www/exchat     
       imagePullSecrets:
@@ -98,3 +105,20 @@ spec:
           defaultMode: 420
           optional: false
           secretName: exchat-secrets
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: exchat-dev-ssh
+  namespace: weapps
+spec:
+  # This tells MetalLB to assign an external IP
+  type: LoadBalancer 
+  # This selector must match the labels on your pod template
+  selector:
+    app: exchat-dev-workload
+  ports:
+    - name: ssh
+      protocol: TCP
+      port: 22 # The port you will connect to from outside the cluster
+      targetPort: 22 # The port the container is listening on (from the Deployment)    
