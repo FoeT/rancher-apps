@@ -16,20 +16,23 @@ kind: Ingress
 metadata:
   name: foretold-service-ingress
   namespace: weapps
-  annotations: 
-    traefik.ingress.kubernetes.io/router.entrypoints: websecure
-    traefik.ingress.kubernetes.io/router.tls: "true"
 spec:
-  entryPoints:
-    - websecure
-  routes:
-    - match: Host(`foretold.mynetapp.site`)
-      kind: Rule
-      services:
-        - name: nginx-service
-          port: 80      
+  ingressClassName: traefik
+  rules:
+  - host: foretold.mynetapp.site
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: foretold-service
+            port:
+              number: 80
   tls:
-    secretName: mynetapp-site-production-tls          
+  - hosts:
+    - foretold.mynetapp.site
+    secretName: mynetapp-site-production-tls
 ---
 apiVersion: apps/v1
 kind: Deployment
