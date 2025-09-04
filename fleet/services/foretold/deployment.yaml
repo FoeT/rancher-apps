@@ -17,7 +17,8 @@ metadata:
   name: foretold-service-ingress
   namespace: weapps
   annotations: 
-    kubernetes.io/ingress.class: traefik-external
+    traefik.ingress.kubernetes.io/router.entrypoints: websecure
+    traefik.ingress.kubernetes.io/router.tls: "true"
 spec:
   entryPoints:
     - websecure
